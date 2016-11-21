@@ -1,4 +1,4 @@
-package org.geotools.arcgisrest.schema.catalog;
+package org.geotools.data.arcgisrest.schema.catalog;
 
 import java.util.HashMap;
 import java.util.Map;

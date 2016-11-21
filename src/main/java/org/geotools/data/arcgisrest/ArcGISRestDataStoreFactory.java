@@ -16,15 +16,18 @@
  *
  */
 
-package org.geotools.arcgisrest;
+package org.geotools.data.arcgisrest;
 
 import java.awt.RenderingHints.Key;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geotools.data.DataStore;
@@ -70,6 +73,12 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   }
 
   @Override
+  public DataStore createNewDataStore(Map<String, Serializable> params)
+      throws IOException {
+    return createDataStore(params);
+  }
+
+  @Override
   public DataStore createDataStore(Map<String, Serializable> params)
       throws IOException {
 
@@ -77,7 +86,6 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
         (String) params.get(NAMESPACE_PARAM), (String) params.get(URL_PARAM),
         (String) params.get(USER_PARAM), (String) params.get(PASSWORD_PARAM));
     return dataStore;
-
   }
 
   @Override
@@ -99,7 +107,18 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   @Override
   public boolean canProcess(Map<String, Serializable> params) {
-    return false;
+    try {
+      new URL((String) params.get(ArcGISRestDataStoreFactory.URL_PARAM.key));
+    } catch (MalformedURLException e) {
+      return false;
+    }
+    try {
+      new URL((String) params.get(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key));
+    } catch (MalformedURLException e) {
+      return false;
+    }
+
+    return true;
   }
 
   @Override
@@ -109,12 +128,6 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   @Override
   public Map<Key, ?> getImplementationHints() {
-    return null;
-  }
-
-  @Override
-  public DataStore createNewDataStore(Map<String, Serializable> params)
-      throws IOException {
     return null;
   }
 

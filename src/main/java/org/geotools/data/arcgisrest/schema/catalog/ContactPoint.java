@@ -19,39 +19,20 @@
 /**
  * Generated with http://www.jsonschema2pojo.org/
  */
-package org.geotools.arcgisrest.schema.catalog;
 
-import java.util.ArrayList;
+package org.geotools.data.arcgisrest.schema.catalog;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
 
-public class Catalog {
+@Generated("org.jsonschema2pojo")
+public class ContactPoint {
 
-  private String context;
   private String type;
-  private String conformsTo;
-  private String describedBy;
-  private List<Dataset> dataset = new ArrayList<Dataset>();
+  private String fn;
+  private String hasEmail;
   private Map<String, Object> additionalProperties = new HashMap<String, Object>();
-
-  /**
-   * 
-   * @return The context
-   */
-  public String getContext() {
-    return context;
-  }
-
-  /**
-   * 
-   * @param context
-   *          The @context
-   */
-  public void setContext(String context) {
-    this.context = context;
-  }
 
   /**
    * 
@@ -72,53 +53,36 @@ public class Catalog {
 
   /**
    * 
-   * @return The conformsTo
+   * @return The fn
    */
-  public String getConformsTo() {
-    return conformsTo;
+  public String getFn() {
+    return fn;
   }
 
   /**
    * 
-   * @param conformsTo
-   *          The conformsTo
+   * @param fn
+   *          The fn
    */
-  public void setConformsTo(String conformsTo) {
-    this.conformsTo = conformsTo;
+  public void setFn(String fn) {
+    this.fn = fn;
   }
 
   /**
    * 
-   * @return The describedBy
+   * @return The hasEmail
    */
-  public String getDescribedBy() {
-    return describedBy;
+  public String getHasEmail() {
+    return hasEmail;
   }
 
   /**
    * 
-   * @param describedBy
-   *          The describedBy
+   * @param hasEmail
+   *          The hasEmail
    */
-  public void setDescribedBy(String describedBy) {
-    this.describedBy = describedBy;
-  }
-
-  /**
-   * 
-   * @return The dataset
-   */
-  public List<Dataset> getDataset() {
-    return dataset;
-  }
-
-  /**
-   * 
-   * @param dataset
-   *          The dataset
-   */
-  public void setDataset(List<Dataset> dataset) {
-    this.dataset = dataset;
+  public void setHasEmail(String hasEmail) {
+    this.hasEmail = hasEmail;
   }
 
   public Map<String, Object> getAdditionalProperties() {
@@ -128,5 +92,4 @@ public class Catalog {
   public void setAdditionalProperty(String name, Object value) {
     this.additionalProperties.put(name, value);
   }
-
 }

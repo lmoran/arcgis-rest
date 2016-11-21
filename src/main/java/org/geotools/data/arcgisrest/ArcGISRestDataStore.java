@@ -16,7 +16,7 @@
  *
  */
 
-package org.geotools.arcgisrest;
+package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -24,7 +24,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.geotools.arcgisrest.schema.catalog.Catalog;
+import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
@@ -48,7 +48,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected String password;
 
   public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
-      String password) throws IOException {
+      String password) throws MalformedURLException {
     super();
     try {
       this.apiUrl = new URL(apiEndpoint);
