@@ -18,30 +18,38 @@ package org.geotools.data.arcgisrest;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.geotools.data.DataStore;
-import org.geotools.data.DataStoreFactorySpi;
-import org.geotools.data.DataStoreFinder;
-import org.geotools.data.Parameter;
-import org.geotools.data.DataAccessFactory.Param;
 import org.geotools.data.arcgisrest.ArcGISRestDataStoreFactory;
-import org.geotools.util.SimpleInternationalString;
-import org.geotools.util.Version;
+import org.geotools.util.logging.Logging;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.restlet.Response;
+import org.restlet.data.Status;
+import org.restlet.ext.json.JsonRepresentation;
+import org.restlet.representation.Representation;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @source $URL$
  */
 public class ArcGISRestDataStoreFactoryTest {
+
+  private static final Logger LOGGER = Logging
+      .getLogger("org.geotools.data.arcgisrest");
 
   public static String URL = "http://data.dhs.opendata.arcgis.com/data.json";
   public static String NAMESPACE = "http://aurin.org.au";
@@ -61,6 +69,18 @@ public class ArcGISRestDataStoreFactoryTest {
   public void tearDown() throws Exception {
     dsf = null;
     params = null;
+  }
+
+  private DataStore testCreateDataStore(final String namespace,
+      final String url, final String user, final String password)
+      throws IOException {
+
+    params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, namespace);
+    params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, url);
+    params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, user);
+    params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, password);
+    (new ArcGISRestDataStoreFactory()).createDataStore(params);
+    return (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
   }
 
   @Test
@@ -89,54 +109,36 @@ public class ArcGISRestDataStoreFactoryTest {
     assertTrue(dsf.canProcess(params));
   }
 
-  @Test(expected=MalformedURLException.class)
+  @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedNamespace() throws IOException {
-    testCreateDataStore("aaa", "bbb", "ccc" ,"ddd");
+    LOGGER.setLevel(Level.OFF);
+    testCreateDataStore("aaa", "bbb", "ccc", "ddd");
+    LOGGER.setLevel(Level.FINEST);
   }
 
-  @Test(expected=MalformedURLException.class)
+  @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedURL() throws IOException {
-    testCreateDataStore(NAMESPACE, "bbb", "ccc" ,"ddd");
+    LOGGER.setLevel(Level.OFF);
+    testCreateDataStore(NAMESPACE, "bbb", "ccc", "ddd");
+    LOGGER.setLevel(Level.FINEST);
   }
 
-  /**
-   * @param capabilitiesFile
-   *          the name of the GetCapabilities document under
-   *          {@code /org/geotools/data/wfs/impl/test-data}
-   */
-  private DataStore testCreateDataStore(final String namespace, final String url,
-      final String user, final String password) throws IOException {
-
-    params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, namespace);
-    params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, url);
-    params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, user);
-    params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, password);
-/*
-    final URL capabilitiesUrl = getClass()
-        .getResource("test-data/" + capabilitiesFile);
-    if (capabilitiesUrl == null) {
-      throw new IllegalArgumentException(capabilitiesFile + " not found");
-    }
-    params.put(ArcGISRestDataStoreFactory.URL.key, capabilitiesUrl);
-    params.put(ArcGISRestDataStoreFactory.GML_COMPLIANCE_LEVEL.key, "0");
-*/
-    /* FIXME: this should work with datastorefactoryfinder http://docs.geotools.org/latest/userguide/library/data/datastore.html 
-    DataStore dataStore = DataStoreFinder.getDataStore(params);
-    assertNotNull(dataStore);
-    assertTrue(dataStore instanceof ArcGISRestDataStore);
-*/
-    return (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
-  }
-
-  /*
   @Test
-  public void testCreateNewDataStore() throws IOException {
-    try {
-      dsf.createNewDataStore(params);
-      fail("Expected UnsupportedOperationException");
-    } catch (UnsupportedOperationException e) {
-      assertTrue(true);
-    }
+  public void testCreateDataStoreFromCatalogJSON() throws IOException {
+
+    Response response = mock(Response.class);
+    Representation entity = mock(Representation.class);
+    when(response.getStatus()).thenReturn(Status.SUCCESS_OK);
+    when(response.getEntity()).thenReturn(new JsonRepresentation(
+        (new Scanner(getClass().getResource("test-data/catalog.json").getFile())
+            .next())));
+
+    DataStore ds = testCreateDataStore(NAMESPACE, URL, null, null);
+    assertEquals(ds.getTypeNames().length, 4);
+    assertEquals(ds.getTypeNames()[0], "LGA Profile 2014 (beta)");
+    assertEquals(ds.getTypeNames()[1], "Hospital Locations");
+    assertEquals(ds.getTypeNames()[2], "SportandRec");
+    assertEquals(ds.getTypeNames()[3], "ServiceAreas");
   }
-    */
+
 }

@@ -51,7 +51,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   public static final Param NAMESPACE_PARAM = new Param("namespace",
       String.class, "namespace associated to this data store", true);
   public static final Param URL_PARAM = new Param("url", String.class,
-      "ednpoint of the ArcGSI ReST API", true);
+      "endpoint of the ArcGSI ReST API", true);
   public static final Param USER_PARAM = new Param("user", String.class,
       new SimpleInternationalString("the username of the endpoint"), false,
       null);
@@ -81,11 +81,9 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   @Override
   public DataStore createDataStore(Map<String, Serializable> params)
       throws IOException {
-
-    ArcGISRestDataStore dataStore = new ArcGISRestDataStore(
-        (String) params.get(NAMESPACE_PARAM), (String) params.get(URL_PARAM),
-        (String) params.get(USER_PARAM), (String) params.get(PASSWORD_PARAM));
-    return dataStore;
+    return new ArcGISRestDataStore(
+        (String) params.get(NAMESPACE_PARAM.key), (String) params.get(URL_PARAM.key),
+        (String) params.get(USER_PARAM.key), (String) params.get(PASSWORD_PARAM.key));
   }
 
   @Override
@@ -95,7 +93,6 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   @Override
   public String getDescription() {
-    // TODO Auto-generated method stub
     return FACTORY_DESCRIPTION;
   }
 
@@ -108,12 +105,12 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   @Override
   public boolean canProcess(Map<String, Serializable> params) {
     try {
-      new URL((String) params.get(ArcGISRestDataStoreFactory.URL_PARAM.key));
+      new URL((String) params.get(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key));
     } catch (MalformedURLException e) {
       return false;
     }
     try {
-      new URL((String) params.get(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key));
+      new URL((String) params.get(ArcGISRestDataStoreFactory.URL_PARAM.key));
     } catch (MalformedURLException e) {
       return false;
     }

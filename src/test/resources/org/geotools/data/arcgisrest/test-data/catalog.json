@@ -1,0 +1,299 @@
+{
+  "@context": "https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld",
+  "@type": "dcat:Catalog",
+  "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
+  "describedBy": "https://project-open-data.cio.gov/v1.1/schema/catalog.json",
+  "dataset": [
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0",
+      "title": "LGA Profile 2014 (beta)",
+      "description": "<div>2014 Local Government Area Profiles</div><div><br /></div>https://www2.health.vic.gov.au/about/reporting-planning-data/gis-and-planning-products/geographical-profiles<div>&gt; Please read the data definistions at the link above</div><div>&gt; xls and pdf documents area available at the link above</div><div>&gt; This is a beta release of the 2014 LGA profiles in this format. Field names and types may change during the beta phase. </div><div><br /></div><div>Last updated : 24 May 2016</div><div>Owning agency : Department of Health and Human Services, Victoria</div><div>Copyright statement : https://www.health.vic.gov.au/copyright</div><div>Licence name : https://www.health.vic.gov.au/data-license</div><div>Disclaimer: https://www.health.vic.gov.au/data-disclaimer</div><div>Attribution statement: https://www.health.vic.gov.au/data-attribution</div><div><br /></div><div>Off-line access : Department of Health and Human Services, GPO Box 4057, Melbourne Victoria, 3001</div><div><br /></div><div>Geographic coverage-jurisdiction : Victoria</div>",
+      "keyword": [
+        "LGA Profiles",
+        "Health and Human Services",
+        "LGA"
+      ],
+      "issued": "2016-07-27T04:55:30.000Z",
+      "modified": "2016-08-12T18:56:09.724Z",
+      "publisher": {
+        "name": "Health and Human Services Victoria"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "miles da costa",
+        "hasEmail": "mailto:spatial@dhhs.vic.gov.au"
+      },
+      "accessLevel": "public",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Open Dataset",
+          "format": "Web page",
+          "mediaType": "text/html",
+          "accessURL": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Esri Rest API",
+          "format": "Esri REST",
+          "mediaType": "application/json",
+          "accessURL": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0.geojson"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0.csv"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0.kml"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0.zip"
+        }
+      ],
+      "landingPage": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0",
+      "webService": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0",
+      "license": "http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0/license.json",
+      "spatial": "140.68687930094052,-39.14445967968202,150.07953385695868,-33.95278976659559",
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0",
+      "title": "Hospital Locations",
+      "description": "<b>Hospital locations</b><div>for Public and Private Hospitals</div><div><b>Coverage : </b>Victoria</div><div><b>Agency : </b>Department of Health and Human Services</div><div><br /></div><div>OPSName : Common Operation Name for the Hospital</div><div>Label Name : Common Label Name for the hospital</div><div>Service Name : The name of the service, applies only to public hospitals</div><div>Campus Code : Taken from the VAED data definitions. Is a code applying to the hospital campus (https://www2.health.vic.gov.au/about/publications/researchandreports/vaed-manual-2016-17-section-3)</div><div>Locality / LGA and Vicgov Region are referenced from VicMap Administrative datasets based on the location </div>",
+      "keyword": [
+        "Hosptial"
+      ],
+      "issued": "2016-07-22T00:54:43.000Z",
+      "modified": "2016-07-26T04:49:29.765Z",
+      "publisher": {
+        "name": "Health and Human Services Victoria"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "miles da costa",
+        "hasEmail": "mailto:spatial@dhhs.vic.gov.au"
+      },
+      "accessLevel": "public",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Open Dataset",
+          "format": "Web page",
+          "mediaType": "text/html",
+          "accessURL": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Esri Rest API",
+          "format": "Esri REST",
+          "mediaType": "application/json",
+          "accessURL": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/Hospital_Locations/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0.geojson"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0.csv"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0.kml"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0.zip"
+        }
+      ],
+      "landingPage": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0",
+      "webService": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/Hospital_Locations/FeatureServer/0",
+      "license": "http://data.dhs.opendata.arcgis.com/datasets/5000b3c446ed419eb590baa3832eb8f7_0/license.json",
+      "spatial": "141.1293518861794,-38.76123381812848,148.5124760176795,-34.16224903049449",
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0",
+      "title": "SportandRec",
+      "description": "Identifies location, the type of sport played and condition, age and other details about the recreational facility. Data contains approximately 80 types of sport including private gyms and fitness centres",
+      "keyword": [
+        "Sport",
+        "Recreation",
+        "Victoria",
+        "Recreation",
+        "Victoria"
+      ],
+      "issued": "2015-09-14T03:57:52.000Z",
+      "modified": "2016-06-09T00:52:08.425Z",
+      "publisher": {
+        "name": "Health and Human Services Victoria"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "miles da costa",
+        "hasEmail": "mailto:spatial@dhhs.vic.gov.au"
+      },
+      "accessLevel": "public",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Open Dataset",
+          "format": "Web page",
+          "mediaType": "text/html",
+          "accessURL": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Esri Rest API",
+          "format": "Esri REST",
+          "mediaType": "application/json",
+          "accessURL": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/SportandRec/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0.geojson"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0.csv"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0.kml"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0.zip"
+        }
+      ],
+      "landingPage": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0",
+      "webService": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/SportandRec/FeatureServer/0",
+      "license": "http://data.dhs.opendata.arcgis.com/datasets/5f96a56cf8024d24b825b6aad94031e4_0/license.json",
+      "spatial": "140.83971157269863,-38.83683099142432,149.83685814526493,-34.10515071511039",
+      "theme": [
+        "geospatial"
+      ]
+    },
+    {
+      "@type": "dcat:Dataset",
+      "identifier": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0",
+      "title": "ServiceAreas",
+      "description": "DHS Service Areas",
+      "keyword": [
+        "DHS",
+        " Service Areas"
+      ],
+      "issued": "2015-04-09T01:38:27.000Z",
+      "modified": "2015-04-09T01:38:44.000Z",
+      "publisher": {
+        "name": "Health and Human Services Victoria"
+      },
+      "contactPoint": {
+        "@type": "vcard:Contact",
+        "fn": "miles da costa",
+        "hasEmail": "mailto:spatial@dhhs.vic.gov.au"
+      },
+      "accessLevel": "public",
+      "distribution": [
+        {
+          "@type": "dcat:Distribution",
+          "title": "ArcGIS Open Dataset",
+          "format": "Web page",
+          "mediaType": "text/html",
+          "accessURL": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Esri Rest API",
+          "format": "Esri REST",
+          "mediaType": "application/json",
+          "accessURL": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/ServiceAreas/FeatureServer/0"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "GeoJSON",
+          "format": "GeoJSON",
+          "mediaType": "application/vnd.geo+json",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0.geojson"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "CSV",
+          "format": "CSV",
+          "mediaType": "text/csv",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0.csv"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "KML",
+          "format": "KML",
+          "mediaType": "application/vnd.google-earth.kml+xml",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0.kml"
+        },
+        {
+          "@type": "dcat:Distribution",
+          "title": "Shapefile",
+          "format": "ZIP",
+          "mediaType": "application/zip",
+          "downloadURL": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0.zip"
+        }
+      ],
+      "landingPage": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0",
+      "webService": "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/ServiceAreas/FeatureServer/0",
+      "license": "http://data.dhs.opendata.arcgis.com/datasets/1ce60f9cf51f448b8652ee2a494efe31_0/license.json",
+      "spatial": "140.68664704397895,-39.06815462445623,149.75349864492998,-33.95375909569541",
+      "theme": [
+        "geospatial"
+      ]
+    }
+  ]
+}
