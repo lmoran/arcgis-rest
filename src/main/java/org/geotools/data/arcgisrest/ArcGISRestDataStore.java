@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.geotools.data.Query;
-import org.geotools.data.arcgisrest.schema.catalog.Catalog;
-import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.Catalog;
+import org.geotools.data.arcgisrest.schema.Dataset;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
@@ -112,12 +112,13 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
   /**
    * Returns the datastore catalog
+   * 
    * @return Catalog
    */
   public Catalog getCatalog() {
     return this.catalog;
   }
-  
+
   @Override
   protected List<Name> createTypeNames() throws IOException {
 
@@ -138,17 +139,10 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected ContentFeatureSource createFeatureSource(ContentEntry entry)
       throws IOException {
 
-    // Throws error if entry is not in the catalog datasets
-    if (this.catalog.getDataset().indexOf(entry.getTypeName()) == -1) {
-      throw new IOException("Type name " + entry.getTypeName() + " not found");
-    }
-
     try {
       return new ArcGISRestFeatureSource(entry, new Query());
     } catch (URISyntaxException | FactoryException e) {
       throw new IOException(e.getMessage());
-    } finally {
-      return null;
     }
   }
 

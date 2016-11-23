@@ -71,9 +71,40 @@ public class ArcGISRestDataStoreFactoryTest {
     params = null;
   }
 
-  private DataStore testCreateDataStore(final String namespace,
-      final String url, final String user, final String password)
-      throws IOException {
+  /**
+   * Helper method to create a default test data store
+   */
+  public static DataStore createDefaultTestDataStore() throws IOException {
+
+    Map<String, Serializable> params = new HashMap<String, Serializable>();
+
+    Response response = mock(Response.class);
+    Representation entity = mock(Representation.class);
+    when(response.getStatus()).thenReturn(Status.SUCCESS_OK);
+    when(response.getEntity()).thenReturn(
+        new JsonRepresentation((new Scanner(ArcGISRestDataStoreFactoryTest.class
+            .getResource("test-data/catalog.json").getFile()).next())));
+
+    params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, NAMESPACE);
+    params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL);
+    params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);
+    params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, PASSWORD);
+
+    return (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
+  }
+
+  /**
+   * Helper method to create a data store
+   * 
+   * @param namespace
+   * @param url
+   * @param user
+   * @param password
+   * @return
+   * @throws IOException
+   */
+  public DataStore createDataStore(final String namespace, final String url,
+      final String user, final String password) throws IOException {
 
     params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, namespace);
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, url);
@@ -96,7 +127,7 @@ public class ArcGISRestDataStoreFactoryTest {
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, "ftp://example.com");
     assertTrue(dsf.canProcess(params));
 
-    // URL set
+    // URL set correctly
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL);
     assertTrue(dsf.canProcess(params));
 
@@ -112,33 +143,15 @@ public class ArcGISRestDataStoreFactoryTest {
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedNamespace() throws IOException {
     LOGGER.setLevel(Level.OFF);
-    testCreateDataStore("aaa", "bbb", "ccc", "ddd");
+    createDataStore("aaa", "bbb", "ccc", "ddd");
     LOGGER.setLevel(Level.FINEST);
   }
 
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedURL() throws IOException {
     LOGGER.setLevel(Level.OFF);
-    testCreateDataStore(NAMESPACE, "bbb", "ccc", "ddd");
+    createDataStore(NAMESPACE, "bbb", "ccc", "ddd");
     LOGGER.setLevel(Level.FINEST);
-  }
-
-  @Test
-  public void testCreateDataStoreFromCatalogJSON() throws IOException {
-
-    Response response = mock(Response.class);
-    Representation entity = mock(Representation.class);
-    when(response.getStatus()).thenReturn(Status.SUCCESS_OK);
-    when(response.getEntity()).thenReturn(new JsonRepresentation(
-        (new Scanner(getClass().getResource("test-data/catalog.json").getFile())
-            .next())));
-
-    DataStore ds = testCreateDataStore(NAMESPACE, URL, null, null);
-    assertEquals(ds.getTypeNames().length, 4);
-    assertEquals(ds.getTypeNames()[0], "LGA Profile 2014 (beta)");
-    assertEquals(ds.getTypeNames()[1], "Hospital Locations");
-    assertEquals(ds.getTypeNames()[2], "SportandRec");
-    assertEquals(ds.getTypeNames()[3], "ServiceAreas");
   }
 
 }

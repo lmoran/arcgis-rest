@@ -28,7 +28,8 @@ import org.geotools.data.DefaultResourceInfo;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
-import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.Dataset;
+import org.geotools.data.arcgisrest.schema.Webservice;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
@@ -52,10 +53,12 @@ import com.google.gson.Gson;
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   protected ArcGISRestDataStore dataStore;
-  protected Dataset dataset;
+  protected Webservice ws;
   protected SimpleFeatureType featType;
   protected DefaultResourceInfo resInfo;
 
+  // FIXME: Are we user ArcGIS ReST API always uses this for the "spatial"
+  // property?
   protected static CoordinateReferenceSystem SPATIALCRS;
 
   {
@@ -78,47 +81,71 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   };
 
   public ArcGISRestFeatureSource(ContentEntry entry, Query query)
-      throws IOException, URISyntaxException, NoSuchAuthorityCodeException, FactoryException {
+      throws IOException, URISyntaxException, NoSuchAuthorityCodeException,
+      FactoryException {
+
     super(entry, query);
+
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
 
     // Puts in typeIndex the index of the typename to create a feature source
-    // from
-    int typeIndex = this.dataStore.getCatalog().getDataset()
-        .indexOf(entry.getTypeName());
+    // from, and throws an exeption if entry is not in the catalog datasets
+    int typeIndex = this.dataStore.createTypeNames()
+        .indexOf(entry.getName());
     if (typeIndex == -1) {
-      throw new IOException("Type name " + entry.getTypeName() + " not found");
+      throw new IOException("Type name " + entry.getName() + " not found");
     }
 
     // Retrieves the dataset JSON document
-    URL dsUrl = new URL(this.dataStore.getCatalog().getDataset().get(typeIndex)
-        .getWebService());
-    this.dataset = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
-        Dataset.class);
+    URL dsUrl = new URL(this.dataStore.getCatalog().getDataset().get(typeIndex).getLandingPage().toString());
+    this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
+        Webservice.class);
 
     // Sets up the resouurce info
     this.resInfo = new DefaultResourceInfo();
-    this.resInfo.setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
-    this.resInfo.setCRS(SPATIALCRS); // FIXME: are we sure it is always in WGS84?
-    this.resInfo.setDescription(this.dataset.getDescription());
-    this.resInfo.setKeywords(new HashSet(this.dataset.getKeyword()));
-    this.resInfo.setTitle(this.dataset.getTitle());
-    this.resInfo.setName(this.dataset.getIdentifier());
+    this.resInfo
+        .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
+    this.resInfo.setCRS(SPATIALCRS); // FIXME: are we sure it is always in
+                                     // WGS84?
+    this.resInfo.setDescription(this.ws.getDescription());
+// TODO    this.resInfo.setKeywords(new HashSet(this.ws.getKeyword()));
+// TODO    this.resInfo.setTitle(this.ws.)
+    this.resInfo.setName(this.ws.getName());
     
-    String[] tokens=this.dataset.getSpatial().split(",");
-    ReferencedEnvelope geoBbox= new ReferencedEnvelope(Double.parseDouble(tokens[SpatialExtent.WestBoundLongitude.getIndex()]),
+    /*
+    "extent": {
+      "coordinates": [
+        [
+          140.686879300941,
+          -39.144459679682
+        ],
+        [
+          150.079533856959,
+          -33.9527897665956
+        ]
+      ]
+*/
+          
+System.out.println("XXX " + this.ws.getExtent()); // XXX
+//    String[] tokens = this.dataset.getSpatial().split(",");
+/*    
+    ReferencedEnvelope geoBbox = new ReferencedEnvelope(
+        this.dataset.
         Double.parseDouble(tokens[SpatialExtent.EastBoundLongitude.getIndex()]),
         Double.parseDouble(tokens[SpatialExtent.SouthBoundLatitude.getIndex()]),
-        Double.parseDouble(tokens[SpatialExtent.NorthBoundLatitude.getIndex()]), SPATIALCRS);
+        Double.parseDouble(tokens[SpatialExtent.NorthBoundLatitude.getIndex()]),
+        SPATIALCRS);
     this.resInfo.setBounds(geoBbox);
+    */
   }
 
   @Override
   protected SimpleFeatureType buildFeatureType() throws IOException {
-    
-    SimpleFeatureTypeBuilder builder= new SimpleFeatureTypeBuilder();
-// TODO:
-//    builder.add(new AttributeDescriptorImpl(this.featType, this.dataset., 0, 0, false, builder));
+
+    SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+    // TODO:
+    // builder.add(new AttributeDescriptorImpl(this.featType, this.dataset., 0,
+    // 0, false, builder));
     return null;
   }
 
@@ -135,7 +162,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   @Override
   public Name getName() {
     // TODO Auto-generated method stub
-    return new NameImpl(this.dataset.getTitle());
+    return new NameImpl(this.ws.getName());
   }
 
   @Override
