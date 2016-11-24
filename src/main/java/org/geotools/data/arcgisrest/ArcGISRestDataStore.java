@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.geotools.data.Query;
-import org.geotools.data.arcgisrest.schema.Catalog;
-import org.geotools.data.arcgisrest.schema.Dataset;
+import org.geotools.data.arcgisrest.schema.catalog.Catalog;
+import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;

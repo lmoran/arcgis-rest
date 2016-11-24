@@ -1,5 +1,5 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.catalog;
 
 import java.net.URI;
 import java.util.HashMap;

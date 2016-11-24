@@ -1,5 +1,5 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.webservice;
 
 import java.util.ArrayList;
 import java.util.List;

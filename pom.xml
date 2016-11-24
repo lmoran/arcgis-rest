@@ -107,15 +107,15 @@
         <groupId>org.jsonschema2pojo</groupId>
         <artifactId>jsonschema2pojo-maven-plugin</artifactId>
         <version>0.4.27</version>
-        <configuration>
-          <sourceDirectory>${basedir}/src/main/resources/schema</sourceDirectory>
-          <targetPackage>org.geotools.data.arcgisrest.schema</targetPackage>
-          <sourceType>jsonschema</sourceType>
-          <annotationStyle>gson</annotationStyle>
-          <removeOldOutput>true</removeOldOutput>
-        </configuration>
         <executions>
           <execution>
+            <configuration>
+              <sourceDirectory>${basedir}/src/main/resources/schema</sourceDirectory>
+              <targetPackage>org.geotools.data.arcgisrest.schema</targetPackage>
+              <sourceType>jsonschema</sourceType>
+              <annotationStyle>gson</annotationStyle>
+              <removeOldOutput>true</removeOldOutput>
+            </configuration>
             <goals>
               <goal>generate</goal>
             </goals>
@@ -128,12 +128,12 @@
           <execution>
             <phase>generate-sources</phase>
             <configuration>
-              <tasks>
+              <target>
                 <copy todir="${basedir}/src/main/java">
                   <fileset dir="${basedir}/target/java-gen" />
                 </copy>
-                <delete dir="${basedir}/target/java-gen"/>
-              </tasks>
+                <delete dir="${basedir}/target/java-gen" />
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>

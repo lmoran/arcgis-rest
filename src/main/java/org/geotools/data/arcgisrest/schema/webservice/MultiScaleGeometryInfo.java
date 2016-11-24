@@ -1,43 +1,45 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.webservice;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-public class EditingInfo {
+public class MultiScaleGeometryInfo {
 
     /**
      * 
      * (Required)
      * 
      */
-    @SerializedName("lastEditDate")
+    @SerializedName("levels")
     @Expose
-    private Integer lastEditDate;
+    private List<Integer> levels = new ArrayList<Integer>();
 
     /**
      * 
      * (Required)
      * 
      * @return
-     *     The lastEditDate
+     *     The levels
      */
-    public Integer getLastEditDate() {
-        return lastEditDate;
+    public List<Integer> getLevels() {
+        return levels;
     }
 
     /**
      * 
      * (Required)
      * 
-     * @param lastEditDate
-     *     The lastEditDate
+     * @param levels
+     *     The levels
      */
-    public void setLastEditDate(Integer lastEditDate) {
-        this.lastEditDate = lastEditDate;
+    public void setLevels(List<Integer> levels) {
+        this.levels = levels;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class EditingInfo {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(lastEditDate).toHashCode();
+        return new HashCodeBuilder().append(levels).toHashCode();
     }
 
     @Override
@@ -55,11 +57,11 @@ public class EditingInfo {
         if (other == this) {
             return true;
         }
-        if ((other instanceof EditingInfo) == false) {
+        if ((other instanceof MultiScaleGeometryInfo) == false) {
             return false;
         }
-        EditingInfo rhs = ((EditingInfo) other);
-        return new EqualsBuilder().append(lastEditDate, rhs.lastEditDate).isEquals();
+        MultiScaleGeometryInfo rhs = ((MultiScaleGeometryInfo) other);
+        return new EqualsBuilder().append(levels, rhs.levels).isEquals();
     }
 
 }

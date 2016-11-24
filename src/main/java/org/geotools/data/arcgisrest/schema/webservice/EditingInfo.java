@@ -1,45 +1,43 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.webservice;
 
-import java.util.ArrayList;
-import java.util.List;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-public class MultiScaleGeometryInfo {
+public class EditingInfo {
 
     /**
      * 
      * (Required)
      * 
      */
-    @SerializedName("levels")
+    @SerializedName("lastEditDate")
     @Expose
-    private List<Integer> levels = new ArrayList<Integer>();
+    private Integer lastEditDate;
 
     /**
      * 
      * (Required)
      * 
      * @return
-     *     The levels
+     *     The lastEditDate
      */
-    public List<Integer> getLevels() {
-        return levels;
+    public Integer getLastEditDate() {
+        return lastEditDate;
     }
 
     /**
      * 
      * (Required)
      * 
-     * @param levels
-     *     The levels
+     * @param lastEditDate
+     *     The lastEditDate
      */
-    public void setLevels(List<Integer> levels) {
-        this.levels = levels;
+    public void setLastEditDate(Integer lastEditDate) {
+        this.lastEditDate = lastEditDate;
     }
 
     @Override
@@ -49,7 +47,7 @@ public class MultiScaleGeometryInfo {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(levels).toHashCode();
+        return new HashCodeBuilder().append(lastEditDate).toHashCode();
     }
 
     @Override
@@ -57,11 +55,11 @@ public class MultiScaleGeometryInfo {
         if (other == this) {
             return true;
         }
-        if ((other instanceof MultiScaleGeometryInfo) == false) {
+        if ((other instanceof EditingInfo) == false) {
             return false;
         }
-        MultiScaleGeometryInfo rhs = ((MultiScaleGeometryInfo) other);
-        return new EqualsBuilder().append(levels, rhs.levels).isEquals();
+        EditingInfo rhs = ((EditingInfo) other);
+        return new EqualsBuilder().append(lastEditDate, rhs.lastEditDate).isEquals();
     }
 
 }

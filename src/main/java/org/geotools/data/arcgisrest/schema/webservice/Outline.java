@@ -1,13 +1,15 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.webservice;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-public class Symbol {
+public class Outline {
 
     /**
      * 
@@ -16,15 +18,15 @@ public class Symbol {
      */
     @SerializedName("color")
     @Expose
-    private Object color;
+    private List<Integer> color = new ArrayList<Integer>();
     /**
      * 
      * (Required)
      * 
      */
-    @SerializedName("outline")
+    @SerializedName("width")
     @Expose
-    private Outline outline;
+    private Double width;
     /**
      * 
      * (Required)
@@ -49,7 +51,7 @@ public class Symbol {
      * @return
      *     The color
      */
-    public Object getColor() {
+    public List<Integer> getColor() {
         return color;
     }
 
@@ -60,7 +62,7 @@ public class Symbol {
      * @param color
      *     The color
      */
-    public void setColor(Object color) {
+    public void setColor(List<Integer> color) {
         this.color = color;
     }
 
@@ -69,21 +71,21 @@ public class Symbol {
      * (Required)
      * 
      * @return
-     *     The outline
+     *     The width
      */
-    public Outline getOutline() {
-        return outline;
+    public Double getWidth() {
+        return width;
     }
 
     /**
      * 
      * (Required)
      * 
-     * @param outline
-     *     The outline
+     * @param width
+     *     The width
      */
-    public void setOutline(Outline outline) {
-        this.outline = outline;
+    public void setWidth(Double width) {
+        this.width = width;
     }
 
     /**
@@ -137,7 +139,7 @@ public class Symbol {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(color).append(outline).append(type).append(style).toHashCode();
+        return new HashCodeBuilder().append(color).append(width).append(type).append(style).toHashCode();
     }
 
     @Override
@@ -145,11 +147,11 @@ public class Symbol {
         if (other == this) {
             return true;
         }
-        if ((other instanceof Symbol) == false) {
+        if ((other instanceof Outline) == false) {
             return false;
         }
-        Symbol rhs = ((Symbol) other);
-        return new EqualsBuilder().append(color, rhs.color).append(outline, rhs.outline).append(type, rhs.type).append(style, rhs.style).isEquals();
+        Outline rhs = ((Outline) other);
+        return new EqualsBuilder().append(color, rhs.color).append(width, rhs.width).append(type, rhs.type).append(style, rhs.style).isEquals();
     }
 
 }

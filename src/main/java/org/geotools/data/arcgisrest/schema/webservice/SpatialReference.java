@@ -1,5 +1,5 @@
 
-package org.geotools.data.arcgisrest.schema;
+package org.geotools.data.arcgisrest.schema.webservice;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -7,45 +7,45 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-public class Renderer {
+public class SpatialReference {
 
     /**
      * 
      * (Required)
      * 
      */
-    @SerializedName("type")
+    @SerializedName("wkid")
     @Expose
-    private String type;
+    private Integer wkid;
     /**
      * 
      * (Required)
      * 
      */
-    @SerializedName("symbol")
+    @SerializedName("latestWkid")
     @Expose
-    private Symbol symbol;
+    private Integer latestWkid;
 
     /**
      * 
      * (Required)
      * 
      * @return
-     *     The type
+     *     The wkid
      */
-    public String getType() {
-        return type;
+    public Integer getWkid() {
+        return wkid;
     }
 
     /**
      * 
      * (Required)
      * 
-     * @param type
-     *     The type
+     * @param wkid
+     *     The wkid
      */
-    public void setType(String type) {
-        this.type = type;
+    public void setWkid(Integer wkid) {
+        this.wkid = wkid;
     }
 
     /**
@@ -53,21 +53,21 @@ public class Renderer {
      * (Required)
      * 
      * @return
-     *     The symbol
+     *     The latestWkid
      */
-    public Symbol getSymbol() {
-        return symbol;
+    public Integer getLatestWkid() {
+        return latestWkid;
     }
 
     /**
      * 
      * (Required)
      * 
-     * @param symbol
-     *     The symbol
+     * @param latestWkid
+     *     The latestWkid
      */
-    public void setSymbol(Symbol symbol) {
-        this.symbol = symbol;
+    public void setLatestWkid(Integer latestWkid) {
+        this.latestWkid = latestWkid;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class Renderer {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(type).append(symbol).toHashCode();
+        return new HashCodeBuilder().append(wkid).append(latestWkid).toHashCode();
     }
 
     @Override
@@ -85,11 +85,11 @@ public class Renderer {
         if (other == this) {
             return true;
         }
-        if ((other instanceof Renderer) == false) {
+        if ((other instanceof SpatialReference) == false) {
             return false;
         }
-        Renderer rhs = ((Renderer) other);
-        return new EqualsBuilder().append(type, rhs.type).append(symbol, rhs.symbol).isEquals();
+        SpatialReference rhs = ((SpatialReference) other);
+        return new EqualsBuilder().append(wkid, rhs.wkid).append(latestWkid, rhs.latestWkid).isEquals();
     }
 
 }
