@@ -20,6 +20,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -63,6 +64,7 @@ public class ArcGISRestDataStoreFactoryTest {
   public void setUp() throws Exception {
     dsf = new ArcGISRestDataStoreFactory();
     params = new HashMap<String, Serializable>();
+
   }
 
   @After
@@ -72,19 +74,29 @@ public class ArcGISRestDataStoreFactoryTest {
   }
 
   /**
+   * Helper method to read a JSON file into a String
+   * 
+   * @param fileName
+   *          File name to load
+   * @return JSON content of the file
+   * @throws FileNotFoundException
+   */
+  public static String readJSON(String fileName) throws FileNotFoundException {
+    Scanner input = new Scanner(new File(
+        ArcGISRestDataStoreFactoryTest.class.getResource(fileName).getFile()));
+    StringBuilder jsonObj = new StringBuilder();
+    while (input.hasNextLine()) {
+      jsonObj.append(input.nextLine());
+    }
+    return jsonObj.toString();
+  }
+
+  /**
    * Helper method to create a default test data store
    */
   public static DataStore createDefaultTestDataStore() throws IOException {
 
     Map<String, Serializable> params = new HashMap<String, Serializable>();
-
-    Response response = mock(Response.class);
-    Representation entity = mock(Representation.class);
-    when(response.getStatus()).thenReturn(Status.SUCCESS_OK);
-    when(response.getEntity()).thenReturn(
-        new JsonRepresentation((new Scanner(ArcGISRestDataStoreFactoryTest.class
-            .getResource("test-data/catalog.json").getFile()).next())));
-
     params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, NAMESPACE);
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL);
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);

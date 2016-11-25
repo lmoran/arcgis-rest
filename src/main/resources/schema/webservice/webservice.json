@@ -33,7 +33,7 @@
       "type": "object",
       "properties": {
         "lastEditDate": {
-          "type": "integer"
+          "type": "long"
         }
       },
       "required": [

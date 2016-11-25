@@ -63,6 +63,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
   public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
       String password) throws MalformedURLException {
+
     super();
     try {
       this.namespace = new URL(namespace);
@@ -107,7 +108,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
     // Parses JSON document according to this schema
     resource.get(MediaType.APPLICATION_JSON);
-    return resource.getResponseEntity().getText();
+String s=resource.getResponseEntity().getText(); //XXX
+    return s;
   }
 
   /**
@@ -128,9 +130,11 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
     // Returns the list of datasets referenced in the catalog
     List<Name> datasets = new ArrayList<Name>();
-    this.catalog.getDataset().forEach((ds) -> {
-      datasets.add(new NameImpl(namespace.toExternalForm(), ds.getTitle()));
-    });
+    if (this.catalog.getDataset() != null) {
+      this.catalog.getDataset().forEach((ds) -> {
+        datasets.add(new NameImpl(namespace.toExternalForm(), ds.getTitle()));
+      });
+    }
 
     return datasets;
   }

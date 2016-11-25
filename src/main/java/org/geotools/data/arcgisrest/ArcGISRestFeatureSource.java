@@ -22,13 +22,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.geotools.data.DefaultResourceInfo;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
-import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.store.ContentDataStore;
@@ -36,14 +37,10 @@ import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.metadata.iso.extent.GeographicBoundingBoxImpl;
 import org.geotools.referencing.CRS;
-import org.geotools.feature.type.AttributeDescriptorImpl;
-import org.geotools.feature.AttributeBuilder;
 import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
@@ -62,24 +59,22 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   // property?
   protected static CoordinateReferenceSystem SPATIALCRS;
 
-  {
-    SPATIALCRS = CRS.decode("EPSG:4326");
+  protected static Map<String, Class> EsriJavaMapping = new HashMap<String, Class>();
+  static {
+    EsriJavaMapping.put("esriFieldTypeBlob", java.lang.Object.class);
+    EsriJavaMapping.put("esriFieldTypeDate", java.util.Date.class);
+    EsriJavaMapping.put("esriFieldTypeDouble", java.lang.Double.class);
+    EsriJavaMapping.put("esriFieldTypeGUID", java.lang.String.class);
+    // TODO: EsriJavaMapping.put("esriFieldTypeGeometry", "");
+    EsriJavaMapping.put("esriFieldTypeGlobalID", java.lang.Long.class);
+    EsriJavaMapping.put("esriFieldTypeInteger", java.lang.Integer.class);
+    EsriJavaMapping.put("esriFieldTypeOID", java.lang.String.class);
+    EsriJavaMapping.put("esriFieldTypeRaster", java.lang.Object.class);
+    EsriJavaMapping.put("esriFieldTypeSingle", java.lang.Float.class);
+    EsriJavaMapping.put("esriFieldTypeSmallInteger", java.lang.Integer.class);
+    EsriJavaMapping.put("esriFieldTypeString", java.lang.String.class);
+    EsriJavaMapping.put("esriFieldTypeXML", java.lang.String.class);
   }
-
-  protected static enum SpatialExtent {
-    WestBoundLongitude(0), EastBoundLongitude(2), SouthBoundLatitude(
-        1), NorthBoundLatitude(3);
-
-    private int index;
-
-    SpatialExtent(int i) {
-      this.index = i;
-    }
-
-    public int getIndex() {
-      return this.index;
-    }
-  };
 
   public ArcGISRestFeatureSource(ContentEntry entry, Query query)
       throws IOException, URISyntaxException, NoSuchAuthorityCodeException,
@@ -89,65 +84,54 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
 
-    // Puts in typeIndex the index of the typename to create a feature source
+    // Puts in typeName the typename to create a feature source
     // from, and throws an exeption if entry is not in the catalog datasets
-    int typeIndex = this.dataStore.createTypeNames()
-        .indexOf(entry.getName());
+    int typeIndex = this.dataStore.createTypeNames().indexOf(entry.getName());
     if (typeIndex == -1) {
       throw new IOException("Type name " + entry.getName() + " not found");
     }
+    Dataset typeName = this.dataStore.getCatalog().getDataset().get(typeIndex);
 
     // Retrieves the dataset JSON document
-    URL dsUrl = new URL(this.dataStore.getCatalog().getDataset().get(typeIndex).getLandingPage().toString());
+    URL dsUrl = new URL(typeName.getWebService().toString());
     this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
         Webservice.class);
 
-    // Sets up the resouurce info
+    // Sets the resource info
     this.resInfo = new DefaultResourceInfo();
     this.resInfo
         .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
-    this.resInfo.setCRS(SPATIALCRS); // FIXME: are we sure it is always in
-                                     // WGS84?
-    this.resInfo.setDescription(this.ws.getDescription());
-// TODO    this.resInfo.setKeywords(new HashSet(this.ws.getKeyword()));
-// TODO    this.resInfo.setTitle(this.ws.)
+    this.resInfo.setCRS(CRS.decode(
+        "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
+    this.resInfo.setDescription(this.ws.getDescription().length() > 2? this.ws.getDescription() : typeName.getDescription());
+    this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
+
+    this.resInfo.setTitle(typeName.getTitle());
     this.resInfo.setName(this.ws.getName());
-    
-    /*
-    "extent": {
-      "coordinates": [
-        [
-          140.686879300941,
-          -39.144459679682
-        ],
-        [
-          150.079533856959,
-          -33.9527897665956
-        ]
-      ]
-*/
-          
-System.out.println("XXX " + this.ws.getExtent()); // XXX
-//    String[] tokens = this.dataset.getSpatial().split(",");
-/*    
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
-        this.dataset.
-        Double.parseDouble(tokens[SpatialExtent.EastBoundLongitude.getIndex()]),
-        Double.parseDouble(tokens[SpatialExtent.SouthBoundLatitude.getIndex()]),
-        Double.parseDouble(tokens[SpatialExtent.NorthBoundLatitude.getIndex()]),
-        SPATIALCRS);
+        this.ws.getExtent().getXmin(), this.ws.getExtent().getXmax(),
+        this.ws.getExtent().getYmin(), this.ws.getExtent().getYmax(),
+        this.resInfo.getCRS());
     this.resInfo.setBounds(geoBbox);
-    */
   }
 
   @Override
   protected SimpleFeatureType buildFeatureType() throws IOException {
 
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-    // TODO:
-    // builder.add(new AttributeDescriptorImpl(this.featType, this.dataset., 0,
-    // 0, false, builder));
-    return null;
+    builder.setName(new NameImpl(this.resInfo.getSchema().toString(),
+        this.resInfo.getName()));
+
+    this.ws.getFields().forEach((fld) -> {
+      Class clazz = EsriJavaMapping.get(fld.getType());
+      if (clazz == null) {
+        this.getDataStore().getLogger()
+            .severe("Type " + fld.getType() + " not found");
+      }
+      builder.add(fld.getName(), clazz);
+    });
+
+    return builder.buildFeatureType();
   }
 
   @Override

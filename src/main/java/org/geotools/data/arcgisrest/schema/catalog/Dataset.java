@@ -173,6 +173,15 @@ public class Dataset {
     @Expose
     private Object landingPage;
     /**
+     * WebService URL (ESRI extension of the standard schema)
+     * <p>
+     * ESRI ArcGIS ReST API pf the datatse
+     * 
+     */
+    @SerializedName("webService")
+    @Expose
+    private Object webService;
+    /**
      * Language
      * <p>
      * The language of the dataset.
@@ -691,6 +700,30 @@ public class Dataset {
     }
 
     /**
+     * WebService URL (ESRI extension of the standard schema)
+     * <p>
+     * ESRI ArcGIS ReST API pf the datatse
+     * 
+     * @return
+     *     The webService
+     */
+    public Object getWebService() {
+        return webService;
+    }
+
+    /**
+     * WebService URL (ESRI extension of the standard schema)
+     * <p>
+     * ESRI ArcGIS ReST API pf the datatse
+     * 
+     * @param webService
+     *     The webService
+     */
+    public void setWebService(Object webService) {
+        this.webService = webService;
+    }
+
+    /**
      * Language
      * <p>
      * The language of the dataset.
@@ -1017,7 +1050,7 @@ public class Dataset {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(type).append(accessLevel).append(rights).append(accrualPeriodicity).append(bureauCode).append(contactPoint).append(describedBy).append(describedByType).append(conformsTo).append(dataQuality).append(description).append(distribution).append(identifier).append(issued).append(keyword).append(landingPage).append(language).append(license).append(modified).append(primaryITInvestmentUII).append(programCode).append(publisher).append(references).append(spatial).append(systemOfRecords).append(temporal).append(isPartOf).append(theme).append(title).toHashCode();
+        return new HashCodeBuilder().append(type).append(accessLevel).append(rights).append(accrualPeriodicity).append(bureauCode).append(contactPoint).append(describedBy).append(describedByType).append(conformsTo).append(dataQuality).append(description).append(distribution).append(identifier).append(issued).append(keyword).append(landingPage).append(webService).append(language).append(license).append(modified).append(primaryITInvestmentUII).append(programCode).append(publisher).append(references).append(spatial).append(systemOfRecords).append(temporal).append(isPartOf).append(theme).append(title).toHashCode();
     }
 
     @Override
@@ -1029,7 +1062,7 @@ public class Dataset {
             return false;
         }
         Dataset rhs = ((Dataset) other);
-        return new EqualsBuilder().append(type, rhs.type).append(accessLevel, rhs.accessLevel).append(rights, rhs.rights).append(accrualPeriodicity, rhs.accrualPeriodicity).append(bureauCode, rhs.bureauCode).append(contactPoint, rhs.contactPoint).append(describedBy, rhs.describedBy).append(describedByType, rhs.describedByType).append(conformsTo, rhs.conformsTo).append(dataQuality, rhs.dataQuality).append(description, rhs.description).append(distribution, rhs.distribution).append(identifier, rhs.identifier).append(issued, rhs.issued).append(keyword, rhs.keyword).append(landingPage, rhs.landingPage).append(language, rhs.language).append(license, rhs.license).append(modified, rhs.modified).append(primaryITInvestmentUII, rhs.primaryITInvestmentUII).append(programCode, rhs.programCode).append(publisher, rhs.publisher).append(references, rhs.references).append(spatial, rhs.spatial).append(systemOfRecords, rhs.systemOfRecords).append(temporal, rhs.temporal).append(isPartOf, rhs.isPartOf).append(theme, rhs.theme).append(title, rhs.title).isEquals();
+        return new EqualsBuilder().append(type, rhs.type).append(accessLevel, rhs.accessLevel).append(rights, rhs.rights).append(accrualPeriodicity, rhs.accrualPeriodicity).append(bureauCode, rhs.bureauCode).append(contactPoint, rhs.contactPoint).append(describedBy, rhs.describedBy).append(describedByType, rhs.describedByType).append(conformsTo, rhs.conformsTo).append(dataQuality, rhs.dataQuality).append(description, rhs.description).append(distribution, rhs.distribution).append(identifier, rhs.identifier).append(issued, rhs.issued).append(keyword, rhs.keyword).append(landingPage, rhs.landingPage).append(webService, rhs.webService).append(language, rhs.language).append(license, rhs.license).append(modified, rhs.modified).append(primaryITInvestmentUII, rhs.primaryITInvestmentUII).append(programCode, rhs.programCode).append(publisher, rhs.publisher).append(references, rhs.references).append(spatial, rhs.spatial).append(systemOfRecords, rhs.systemOfRecords).append(temporal, rhs.temporal).append(isPartOf, rhs.isPartOf).append(theme, rhs.theme).append(title, rhs.title).isEquals();
     }
 
     public enum AccessLevel {

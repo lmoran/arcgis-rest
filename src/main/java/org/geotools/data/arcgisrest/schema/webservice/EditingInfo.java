@@ -16,7 +16,7 @@ public class EditingInfo {
      */
     @SerializedName("lastEditDate")
     @Expose
-    private Integer lastEditDate;
+    private Object lastEditDate;
 
     /**
      * 
@@ -25,7 +25,7 @@ public class EditingInfo {
      * @return
      *     The lastEditDate
      */
-    public Integer getLastEditDate() {
+    public Object getLastEditDate() {
         return lastEditDate;
     }
 
@@ -36,7 +36,7 @@ public class EditingInfo {
      * @param lastEditDate
      *     The lastEditDate
      */
-    public void setLastEditDate(Integer lastEditDate) {
+    public void setLastEditDate(Object lastEditDate) {
         this.lastEditDate = lastEditDate;
     }
 

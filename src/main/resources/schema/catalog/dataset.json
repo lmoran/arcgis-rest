@@ -195,6 +195,19 @@
         }
       ]
     },
+    "webService": {
+      "title": "WebService URL (ESRI extension of the standard schema)",
+      "description": "ESRI ArcGIS ReST API pf the datatse",
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "language": {
       "title": "Language",
       "description": "The language of the dataset.",

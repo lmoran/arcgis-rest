@@ -43,11 +43,16 @@ import org.geotools.data.DataStore;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.NameImpl;
+import org.geotools.referencing.CRS;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
+import org.restlet.Response;
+import org.restlet.data.Status;
+import org.restlet.ext.json.JsonRepresentation;
+import org.restlet.representation.Representation;
 
 public class ArcGISRestDataStoreTest {
 
@@ -60,6 +65,16 @@ public class ArcGISRestDataStoreTest {
 
   @Before
   public void setUp() throws Exception {
+
+    Response response = mock(Response.class);
+    Representation entity = mock(Representation.class);
+    when(response.getStatus()).thenReturn(Status.SUCCESS_OK)
+        .thenReturn(Status.SUCCESS_OK);
+    when(response.getEntity())
+        .thenReturn(new JsonRepresentation(
+            ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json")))
+        .thenReturn(new JsonRepresentation(ArcGISRestDataStoreFactoryTest
+            .readJSON("test-data/lgaDataset.json")));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
@@ -74,19 +89,19 @@ public class ArcGISRestDataStoreTest {
   public void testCreateTypeNames() throws Exception {
 
     List<Name> names = this.dataStore.createTypeNames();
-    assertEquals(names.size(), 4);
-    assertEquals(names.get(0).getLocalPart(), TYPENAME1);
-    assertEquals(names.get(1).getLocalPart(), TYPENAME2);
-    assertEquals(names.get(2).getLocalPart(), TYPENAME3);
-    assertEquals(names.get(3).getLocalPart(), TYPENAME4);
+    assertEquals(4, names.size());
+    assertEquals(TYPENAME1, names.get(0).getLocalPart());
+    assertEquals(TYPENAME2, names.get(1).getLocalPart());
+    assertEquals(TYPENAME3, names.get(2).getLocalPart());
+    assertEquals(TYPENAME4, names.get(3).getLocalPart());
   }
 
   @Test
   public void testCreateTypeNamesNS() throws Exception {
 
     List<Name> names = this.dataStore.createTypeNames();
-    assertEquals(names.get(0).getNamespaceURI(),
-        ArcGISRestDataStoreFactoryTest.NAMESPACE);
+    assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
+        names.get(0).getNamespaceURI());
   }
 
   @Test
@@ -96,5 +111,18 @@ public class ArcGISRestDataStoreTest {
         new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1));
     assertNotNull(src);
     assertTrue(src instanceof ArcGISRestFeatureSource);
+
+    assertEquals("LGAProfiles2014Beta", src.getInfo().getName());
+    assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
+        src.getInfo().getSchema().toString());
+    assertEquals(CRS.decode("EPSG:3857"), src.getInfo().getCRS());
+    assertEquals("LGA Profile 2014 (beta)", src.getInfo().getTitle());
+    assertEquals(15661191, src.getInfo().getBounds().getMinX(), 1);
+    assertEquals(-4742385, src.getInfo().getBounds().getMinY(), 1);
+    assertEquals(16706777, src.getInfo().getBounds().getMaxX(), 1);
+    assertEquals(-4022464, src.getInfo().getBounds().getMaxY(), 1);
+    assertEquals("[Health and Human Services, LGA, LGA Profiles]",
+        src.getInfo().getKeywords().toString());
+    assertEquals("<div>2014 Local Government Area Profiles</div><div><br /></div>https://www2.health.vic.gov.au/about/reporting-planning-data/gis-and-planning-products/geographical-profiles<div>&gt; Please read the data definistions at the link above</div><div>&gt; xls and pdf documents area available at the link above</div><div>&gt; This is a beta release of the 2014 LGA profiles in this format. Field names and types may change during the beta phase. </div><div><br /></div><div>Last updated : 24 May 2016</div><div>Owning agency : Department of Health and Human Services, Victoria</div><div>Copyright statement : https://www.health.vic.gov.au/copyright</div><div>Licence name : https://www.health.vic.gov.au/data-license</div><div>Disclaimer: https://www.health.vic.gov.au/data-disclaimer</div><div>Attribution statement: https://www.health.vic.gov.au/data-attribution</div><div><br /></div><div>Off-line access : Department of Health and Human Services, GPO Box 4057, Melbourne Victoria, 3001</div><div><br /></div><div>Geographic coverage-jurisdiction : Victoria</div>", src.getInfo().getDescription());
   }
 }
