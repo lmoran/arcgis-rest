@@ -43,6 +43,7 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Method;
 import org.restlet.data.Parameter;
 import org.restlet.data.Protocol;
+import org.restlet.data.Reference;
 import org.restlet.resource.ClientResource;
 
 import com.google.gson.Gson;
@@ -51,7 +52,16 @@ import sun.net.www.protocol.http.HttpURLConnection;
 
 public class ArcGISRestDataStore extends ContentDataStore {
 
-  protected static final Parameter jsonParam = new Parameter("f", "json");
+  // Common paramterse used n the API, together with default values
+  public static final String JSON_DEFAULT = "json";
+  public static final String COUNTONLY_DEFAULT = "true";
+  public static final String GEOMETRYTYPE_DEFAULT = "esriGeometryEnvelope";
+
+  protected Parameter jsonParam = new Parameter("f", JSON_DEFAULT);
+  protected Parameter countonlyParam = new Parameter("returnCountOnly",
+      COUNTONLY_DEFAULT);
+  protected Parameter geometrytypeParam = new Parameter("geometryType",
+      GEOMETRYTYPE_DEFAULT);
 
   // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
   // proper?
@@ -86,19 +96,20 @@ public class ArcGISRestDataStore extends ContentDataStore {
   }
 
   /**
-   * Helper method returning a String out of an URL point to the ArcGIS ReST API
+   * Helper method returning a JSON String out of a resource belongining to a
+   * ArcGIS ReST API instance. If present, it sends authorixzation. 
    * 
-   * @param resUrl
+   * @param ref
    *          The endpoint of the resource
    * @return A string representing the JSON, null
-   * @throws IOException
+   * @throws IOException,
+   *           ResourceException
    */
-  public String retrieveJSON(URL resUrl) throws IOException, ResourceException {
+  public String retrieveJSON(Reference ref)
+      throws IOException, ResourceException {
 
+    ClientResource resource = new ClientResource(Method.GET, ref);
     Client client = new Client(new Context(), Protocol.HTTP);
-    ClientResource resource = new ClientResource(Method.GET, resUrl.toString());
-
-    resource.addQueryParameter(jsonParam);
     resource.setNext(client);
 
     // Adds authorization if login/password is set
@@ -114,7 +125,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
     // In case of HTTP errors, throws an exceptoin
     if (resource.getStatus().getCode() != HttpURLConnection.HTTP_OK) {
       throw new ResourceException(resource.getStatus().getCode(), "", "",
-          resUrl.toString());
+          ref.toString());
     }
 
     // Parses JSON document according to this schema
@@ -129,7 +140,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
         && err.getError().getCode() != null
         && err.getError().getCode() != HttpURLConnection.HTTP_OK) {
       throw new ResourceException(err.getError().getCode(), "",
-          err.getError().getMessage(), resUrl.toString());
+          err.getError().getMessage(), ref.toString());
     }
 
     return json;
@@ -151,7 +162,9 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
     // Retrieves the catalog JSON document
     try {
-      this.catalog = (new Gson()).fromJson(this.retrieveJSON(apiUrl),
+      this.catalog = (new Gson()).fromJson(
+          this.retrieveJSON(
+              new Reference(apiUrl).addQueryParameter(this.jsonParam)),
           Catalog.class);
     } catch (ResourceException e) {
       String msg = e.getStatus().getUri() + ": " + e.getStatus().getCode() + " "

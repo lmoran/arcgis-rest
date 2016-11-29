@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import javax.xml.ws.http.HTTPException;
 
@@ -34,6 +35,7 @@ import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.arcgisrest.schema.webservice.Count;
+import org.geotools.data.arcgisrest.schema.webservice.Extent;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
@@ -48,6 +50,8 @@ import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.restlet.data.Parameter;
+import org.restlet.data.Reference;
 
 import com.google.gson.Gson;
 
@@ -99,7 +103,10 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // Retrieves the dataset JSON document
     URL dsUrl = new URL(typeName.getWebService().toString());
     try {
-      this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
+      this.ws = (new Gson()).fromJson(
+          this.dataStore.retrieveJSON(
+              new Reference(new Reference(typeName.getWebService().toString()))
+                  .addQueryParameter(this.dataStore.jsonParam)),
           Webservice.class);
     } catch (HTTPException e) {
       throw new IOException(
@@ -166,11 +173,19 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   protected int getCountInternal(Query arg0) throws IOException {
-    URL url = new URL(typeName.getWebService().toString() + "/query");
+
     Count cnt;
 
     try {
-      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(url),
+      // TODO: add other parameters
+      Reference ref = (new Reference(
+          new Reference(typeName.getWebService().toString()), "query"))
+              .addQueryParameter(this.dataStore.jsonParam)
+              .addQueryParameter(this.dataStore.countonlyParam)
+              .addQueryParameter(this.dataStore.geometrytypeParam)
+              .addQueryParameter(new Parameter("geometry",
+                  this.composeExtent(this.ws.getExtent())));
+      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(ref),
           Count.class);
     } catch (HTTPException e) {
       throw new IOException(
@@ -194,4 +209,15 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     return null;
   }
 
+  /**
+   * Helper method to return an extent as the API expects it
+   * 
+   * @param ext
+   *          Extent (as expressed in the JSON describing the layer)
+   */
+  protected String composeExtent(Extent ext) {
+    return (new StringJoiner(",")).add(ext.getXmin().toString())
+        .add(ext.getYmin().toString()).add(ext.getXmax().toString())
+        .add(ext.getYmax().toString()).toString();
+  }
 }

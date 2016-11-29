@@ -54,7 +54,6 @@ public class ArcGISRestDataStoreFactoryTest {
 
   public static String URL = "http://data.dhs.opendata.arcgis.com/data.json";
   public static String WSURL = "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0";
-  public static String COUNTURL = "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0/query";
   public static String NAMESPACE = "http://aurin.org.au";
   public static String USER = "testuser";
   public static String PASSWORD = "testpassword";

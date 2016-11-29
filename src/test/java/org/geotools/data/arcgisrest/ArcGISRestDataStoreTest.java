@@ -36,6 +36,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import org.restlet.data.MediaType;
+import org.restlet.data.Parameter;
+import org.restlet.data.Reference;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 import org.restlet.representation.StringRepresentation;
@@ -59,12 +61,10 @@ public class ArcGISRestDataStoreTest {
 
   @Before
   public void setUp() throws Exception {
-
   }
 
   @After
   public void tearDown() throws Exception {
-    // TODO
   }
 
   @Test
@@ -75,7 +75,8 @@ public class ArcGISRestDataStoreTest {
         .mock(ClientResource.class);
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.URL)
+            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
+                .addQueryParameter(new Parameter("f", "json")))
         .thenReturn(resourceCatalogMock);
 
     when(resourceCatalogMock.get())
@@ -102,7 +103,8 @@ public class ArcGISRestDataStoreTest {
         .mock(ClientResource.class);
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.URL)
+            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
+                .addQueryParameter(new Parameter("f", "json")))
         .thenReturn(resourceCatalogMock);
 
     when(resourceCatalogMock.get())
@@ -133,7 +135,8 @@ public class ArcGISRestDataStoreTest {
         .mock(ClientResource.class);
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.URL)
+            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
+                .addQueryParameter(new Parameter("f", "json")))
         .thenReturn(resourceCatalogMock);
 
     when(resourceCatalogMock.get())
@@ -166,7 +169,8 @@ public class ArcGISRestDataStoreTest {
         .mock(ClientResource.class);
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.URL)
+            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
+                .addQueryParameter(new Parameter("f", "json")))
         .thenReturn(resourceCatalogMock);
 
     when(resourceCatalogMock.get())
@@ -187,7 +191,8 @@ public class ArcGISRestDataStoreTest {
     ClientResource resourceWSMock = PowerMockito.mock(ClientResource.class);
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.WSURL)
+            (new Reference(ArcGISRestDataStoreFactoryTest.WSURL))
+                .addQueryParameter(new Parameter("f", "json")))
         .thenReturn(resourceWSMock);
     when(resourceWSMock.get())
         .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
@@ -199,9 +204,17 @@ public class ArcGISRestDataStoreTest {
 
     // Feature count mock
     ClientResource resourceCountMock = PowerMockito.mock(ClientResource.class);
+
     PowerMockito.whenNew(ClientResource.class)
         .withArguments(org.restlet.data.Method.GET,
-            ArcGISRestDataStoreFactoryTest.COUNTURL)
+            (new Reference(new Reference(ArcGISRestDataStoreFactoryTest.WSURL),
+                "query"))
+                    .addQueryParameter(new Parameter("f", "json"))
+                    .addQueryParameter(new Parameter("returnCountOnly", "true"))
+                    .addQueryParameter(
+                        new Parameter("geometryType", "esriGeometryEnvelope"))
+                    .addQueryParameter(new Parameter("geometry",
+                        "1.5661191765075438E7,-4742385.357069922,1.67067772874485E7,-4022464.6054552183")))
         .thenReturn(resourceCountMock);
 
     when(resourceCountMock.get())
@@ -213,13 +226,6 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(new JsonRepresentation(
             ArcGISRestDataStoreFactoryTest.readJSON("test-data/count.json")));
 
-    // when(resource.setChallengeResponse(null)
-    // .thenReturn(ChallengeScheme.HTTP_BASIC, "", "");
-
-    /*
-     * .thenReturn(new JsonRepresentation(
-     * ArcGISRestDataStoreFactoryTest.readJSON("test-data/count.json")));
-     */
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
 
