@@ -26,15 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.restlet.resource.ResourceException;
+
 import org.geotools.data.Query;
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
-import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.geotools.feature.NameImpl;
 import org.restlet.Client;
 import org.restlet.Context;
@@ -46,6 +46,8 @@ import org.restlet.data.Protocol;
 import org.restlet.resource.ClientResource;
 
 import com.google.gson.Gson;
+
+import sun.net.www.protocol.http.HttpURLConnection;
 
 public class ArcGISRestDataStore extends ContentDataStore {
 
@@ -88,13 +90,14 @@ public class ArcGISRestDataStore extends ContentDataStore {
    * 
    * @param resUrl
    *          The endpoint of the resource
-   * @return A string representing the JSOn
+   * @return A string representing the JSON, null
    * @throws IOException
    */
-  public String retrieveJSON(URL resUrl) throws IOException {
+  public String retrieveJSON(URL resUrl) throws IOException, ResourceException {
 
     Client client = new Client(new Context(), Protocol.HTTP);
     ClientResource resource = new ClientResource(Method.GET, resUrl.toString());
+
     resource.addQueryParameter(jsonParam);
     resource.setNext(client);
 
@@ -106,10 +109,30 @@ public class ArcGISRestDataStore extends ContentDataStore {
           this.password);
     }
 
-    // Parses JSON document according to this schema
     resource.get(MediaType.APPLICATION_JSON);
-String s=resource.getResponseEntity().getText(); //XXX
-    return s;
+
+    // In case of HTTP errors, throws an exceptoin
+    if (resource.getStatus().getCode() != HttpURLConnection.HTTP_OK) {
+      throw new ResourceException(resource.getStatus().getCode(), "", "",
+          resUrl.toString());
+    }
+
+    // Parses JSON document according to this schema
+    String json = resource.getResponseEntity().getText();
+
+    // Checks the return JSON for error (yes, ESRI thinks a good idea to return
+    // errors with 200 error codes)
+    org.geotools.data.arcgisrest.schema.catalog.Error err = (new Gson())
+        .fromJson(json,
+            org.geotools.data.arcgisrest.schema.catalog.Error.class);
+    if (err != null && err.getError() != null
+        && err.getError().getCode() != null
+        && err.getError().getCode() != HttpURLConnection.HTTP_OK) {
+      throw new ResourceException(err.getError().getCode(), "",
+          err.getError().getMessage(), resUrl.toString());
+    }
+
+    return json;
   }
 
   /**
@@ -124,12 +147,20 @@ String s=resource.getResponseEntity().getText(); //XXX
   @Override
   protected List<Name> createTypeNames() throws IOException {
 
+    List<Name> datasets = new ArrayList<Name>();
+
     // Retrieves the catalog JSON document
-    this.catalog = (new Gson()).fromJson(this.retrieveJSON(apiUrl),
-        Catalog.class);
+    try {
+      this.catalog = (new Gson()).fromJson(this.retrieveJSON(apiUrl),
+          Catalog.class);
+    } catch (ResourceException e) {
+      String msg = e.getStatus().getUri() + ": " + e.getStatus().getCode() + " "
+          + e.getStatus().getDescription();
+      LOGGER.log(Level.SEVERE, msg);
+      throw new IOException(msg);
+    }
 
     // Returns the list of datasets referenced in the catalog
-    List<Name> datasets = new ArrayList<Name>();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
         datasets.add(new NameImpl(namespace.toExternalForm(), ds.getTitle()));

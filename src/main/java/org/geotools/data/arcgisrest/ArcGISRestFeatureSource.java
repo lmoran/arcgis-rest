@@ -26,11 +26,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import javax.xml.ws.http.HTTPException;
+
 import org.geotools.data.DefaultResourceInfo;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.webservice.Count;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
@@ -54,6 +57,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   protected Webservice ws;
   protected SimpleFeatureType featType;
   protected DefaultResourceInfo resInfo;
+  protected Dataset typeName;
 
   // FIXME: Are we user ArcGIS ReST API always uses this for the "spatial"
   // property?
@@ -90,12 +94,17 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     if (typeIndex == -1) {
       throw new IOException("Type name " + entry.getName() + " not found");
     }
-    Dataset typeName = this.dataStore.getCatalog().getDataset().get(typeIndex);
+    typeName = this.dataStore.getCatalog().getDataset().get(typeIndex);
 
     // Retrieves the dataset JSON document
     URL dsUrl = new URL(typeName.getWebService().toString());
-    this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
-        Webservice.class);
+    try {
+      this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(dsUrl),
+          Webservice.class);
+    } catch (HTTPException e) {
+      throw new IOException(
+          "Error " + e.getStatusCode() + " " + e.getMessage());
+    }
 
     // Sets the resource info
     this.resInfo = new DefaultResourceInfo();
@@ -103,7 +112,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
     this.resInfo.setCRS(CRS.decode(
         "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
-    this.resInfo.setDescription(this.ws.getDescription().length() > 2? this.ws.getDescription() : typeName.getDescription());
+    this.resInfo.setDescription(typeName.getDescription());
     this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
 
     this.resInfo.setTitle(typeName.getTitle());
@@ -146,21 +155,36 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   public Name getName() {
-    // TODO Auto-generated method stub
     return new NameImpl(this.ws.getName());
   }
 
   @Override
   protected ReferencedEnvelope getBoundsInternal(Query arg0)
       throws IOException {
-    // TODO Auto-generated method stub
-    return null;
+    return this.getBounds();
   }
 
   @Override
   protected int getCountInternal(Query arg0) throws IOException {
-    // TODO Auto-generated method stub
-    return 0;
+    URL url = new URL(typeName.getWebService().toString() + "/query");
+    Count cnt;
+
+    try {
+      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(url),
+          Count.class);
+    } catch (HTTPException e) {
+      throw new IOException(
+          "Error " + e.getStatusCode() + " " + e.getMessage());
+    }
+
+    /*
+     * https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/
+     * LGA_Profile_2014_(beta)/FeatureServer/0/query ?returnCountOnly=true
+     * &f=json &geometryType=esriGeometryEnvelope
+     * &geometry=15661191,-4742386,16706778,-4022464
+     */
+
+    return cnt == null ? -1 : cnt.getCount();
   }
 
   @Override
