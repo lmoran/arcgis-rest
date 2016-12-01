@@ -68,14 +68,15 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
     paramMetadata.add(PASSWORD_PARAM);
   }
 
+  // TODO: not quite sure about the use of this method
   public ArcGISRestDataStoreFactory() {
     // TODO Auto-generated constructor stub
   }
 
   @Override
   public DataStore createNewDataStore(Map<String, Serializable> params)
-      throws IOException {
-    return createDataStore(params);
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -98,8 +99,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   @Override
   public Param[] getParametersInfo() {
-    // TODO Auto-generated method stub
-    return (Param[]) paramMetadata.toArray();
+    return (Param[]) paramMetadata.toArray(new Param[paramMetadata.size()]);
   }
 
   @Override

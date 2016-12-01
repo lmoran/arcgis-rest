@@ -37,10 +37,6 @@ import org.geotools.util.logging.Logging;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.restlet.Response;
-import org.restlet.data.Status;
-import org.restlet.ext.json.JsonRepresentation;
-import org.restlet.representation.Representation;
 
 import static org.mockito.Mockito.*;
 
@@ -103,7 +99,7 @@ public class ArcGISRestDataStoreFactoryTest {
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);
     params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, PASSWORD);
 
-    return (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
+    return (new ArcGISRestDataStoreFactory()).createDataStore(params);
   }
 
   /**
@@ -123,10 +119,15 @@ public class ArcGISRestDataStoreFactoryTest {
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, url);
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, user);
     params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, password);
-    (new ArcGISRestDataStoreFactory()).createDataStore(params);
-    return (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
+    return (new ArcGISRestDataStoreFactory()).createDataStore(params);
   }
 
+  @Test(expected = UnsupportedOperationException.class)
+  public void testCreateNewDataStore() throws UnsupportedOperationException {
+    (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
+  }
+
+  
   @Test
   public void testCanProcess() {
     // Nothing set

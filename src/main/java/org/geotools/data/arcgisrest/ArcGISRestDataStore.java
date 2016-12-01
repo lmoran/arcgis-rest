@@ -20,13 +20,12 @@ package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-
-import org.restlet.resource.ResourceException;
 
 import org.geotools.data.Query;
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
@@ -36,15 +35,14 @@ import org.geotools.data.store.ContentFeatureSource;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.geotools.feature.NameImpl;
-import org.restlet.Client;
-import org.restlet.Context;
-import org.restlet.data.ChallengeScheme;
-import org.restlet.data.MediaType;
-import org.restlet.data.Method;
-import org.restlet.data.Parameter;
-import org.restlet.data.Protocol;
-import org.restlet.data.Reference;
-import org.restlet.resource.ClientResource;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthScheme;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import com.google.gson.Gson;
 
@@ -53,15 +51,14 @@ import sun.net.www.protocol.http.HttpURLConnection;
 public class ArcGISRestDataStore extends ContentDataStore {
 
   // Common paramterse used n the API, together with default values
-  public static final String JSON_DEFAULT = "json";
-  public static final String COUNTONLY_DEFAULT = "true";
-  public static final String GEOMETRYTYPE_DEFAULT = "esriGeometryEnvelope";
-
-  protected Parameter jsonParam = new Parameter("f", JSON_DEFAULT);
-  protected Parameter countonlyParam = new Parameter("returnCountOnly",
-      COUNTONLY_DEFAULT);
-  protected Parameter geometrytypeParam = new Parameter("geometryType",
-      GEOMETRYTYPE_DEFAULT);
+  public static HttpMethodParams defaultParams = new HttpMethodParams();
+  public static final String GEOMETRY_PARAM = "geometry";
+  static {
+    defaultParams.setParameter("f", "json");
+    defaultParams.setParameter("returnCountOnly", "true");
+    defaultParams.setParameter("geometryType", "esriGeometryEnvelope");
+    defaultParams.setParameter("f", "json");
+  }
 
   // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
   // proper?
@@ -71,7 +68,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected URL apiUrl;
   protected String user;
   protected String password;
-  protected Catalog catalog;
+  private Catalog catalog;
 
   public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
       String password) throws MalformedURLException {
@@ -97,39 +94,69 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
   /**
    * Helper method returning a JSON String out of a resource belongining to a
-   * ArcGIS ReST API instance. If present, it sends authorixzation. 
+   * ArcGIS ReST API instance (via a GET). If present, it sends authorixzation.
    * 
-   * @param ref
+   * @param url
    *          The endpoint of the resource
+   * @param params
+   *          Request parameters
    * @return A string representing the JSON, null
-   * @throws IOException,
-   *           ResourceException
+   * @throws IOException
+   * @throws InterruptedException
    */
-  public String retrieveJSON(Reference ref)
-      throws IOException, ResourceException {
+  public String retrieveJSON(URL url, HttpMethodParams params)
+      throws IOException {
 
-    ClientResource resource = new ClientResource(Method.GET, ref);
-    Client client = new Client(new Context(), Protocol.HTTP);
-    resource.setNext(client);
+    // Creates the HTTP client and set the request parameters (the one passed to
+    // the methed and the default ones)
+    HttpClient client = new HttpClient();
+    HttpMethod method = new GetMethod(url.toString());
+    method.setParams(defaultParams);
+    method.setParams(params);
+    method.setFollowRedirects(false);
 
     // Adds authorization if login/password is set
     // FIXME: not quite sure null is passed when the field is left empty, better
     // check
     if (this.user != null && this.password != null) {
-      resource.setChallengeResponse(ChallengeScheme.HTTP_BASIC, this.user,
-          this.password);
+      method.addRequestHeader("Authentication",
+          (new UsernamePasswordCredentials(user, password)).toString());
     }
 
-    resource.get(MediaType.APPLICATION_JSON);
+    // Re-tries the request if necessary
+    while (true) {
 
-    // In case of HTTP errors, throws an exceptoin
-    if (resource.getStatus().getCode() != HttpURLConnection.HTTP_OK) {
-      throw new ResourceException(resource.getStatus().getCode(), "", "",
-          ref.toString());
+      // Executes the request
+      int status = client.executeMethod(method);
+
+      // If HTTP error, throws an exception
+      if (status != HttpStatus.SC_OK) {
+        throw new IOException("HTTP Error: " + status + " " + url.toString());
+      }
+
+      // Retrieve the wait period is returned by the server
+      int wait = 0;
+      Header header = method.getResponseHeader("Retry-After");
+      if (header != null) {
+        wait = Integer.valueOf(header.getValue());
+      }
+
+      // Exists if no retry is necessary
+      if (wait == 0) {
+        break;
+      }
+
+      try {
+        Thread.sleep(wait * 1000);
+      } catch (InterruptedException e) {
+        LOGGER.log(Level.SEVERE, "InterruptedException: " + e.getMessage());
+        throw new IOException(e);
+      }
     }
 
-    // Parses JSON document according to this schema
-    String json = resource.getResponseEntity().getText();
+    // Extracts the response
+    String json = method.getResponseBodyAsString();
+    method.releaseConnection();
 
     // Checks the return JSON for error (yes, ESRI thinks a good idea to return
     // errors with 200 error codes)
@@ -139,10 +166,12 @@ public class ArcGISRestDataStore extends ContentDataStore {
     if (err != null && err.getError() != null
         && err.getError().getCode() != null
         && err.getError().getCode() != HttpURLConnection.HTTP_OK) {
-      throw new ResourceException(err.getError().getCode(), "",
-          err.getError().getMessage(), ref.toString());
+      throw new IOException(
+          "ArcGIS ReST API Error : " + err.getError().getCode() + " "
+              + err.getError().getMessage() + " URL:" + url.toString());
     }
 
+    // Returns the JSON response
     return json;
   }
 
@@ -161,17 +190,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
     List<Name> datasets = new ArrayList<Name>();
 
     // Retrieves the catalog JSON document
-    try {
-      this.catalog = (new Gson()).fromJson(
-          this.retrieveJSON(
-              new Reference(apiUrl).addQueryParameter(this.jsonParam)),
-          Catalog.class);
-    } catch (ResourceException e) {
-      String msg = e.getStatus().getUri() + ": " + e.getStatus().getCode() + " "
-          + e.getStatus().getDescription();
-      LOGGER.log(Level.SEVERE, msg);
-      throw new IOException(msg);
-    }
+    this.catalog = (new Gson()).fromJson(
+        this.retrieveJSON(apiUrl, new HttpMethodParams()), Catalog.class);
 
     // Returns the list of datasets referenced in the catalog
     if (this.catalog.getDataset() != null) {

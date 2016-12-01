@@ -29,7 +29,9 @@ import java.util.StringJoiner;
 
 import javax.xml.ws.http.HTTPException;
 
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.DefaultResourceInfo;
+import org.geotools.data.EmptyFeatureReader;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
@@ -50,8 +52,6 @@ import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.restlet.data.Parameter;
-import org.restlet.data.Reference;
 
 import com.google.gson.Gson;
 
@@ -103,10 +103,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // Retrieves the dataset JSON document
     URL dsUrl = new URL(typeName.getWebService().toString());
     try {
-      this.ws = (new Gson()).fromJson(
-          this.dataStore.retrieveJSON(
-              new Reference(new Reference(typeName.getWebService().toString()))
-                  .addQueryParameter(this.dataStore.jsonParam)),
+      this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(
+          new URL(typeName.getWebService().toString()), new HttpMethodParams()),
           Webservice.class);
     } catch (HTTPException e) {
       throw new IOException(
@@ -147,7 +145,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       builder.add(fld.getName(), clazz);
     });
 
-    return builder.buildFeatureType();
+    this.featType = builder.buildFeatureType();
+
+    return featType;
   }
 
   @Override
@@ -175,29 +175,19 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   protected int getCountInternal(Query arg0) throws IOException {
 
     Count cnt;
+    HttpMethodParams params = new HttpMethodParams();
+    params.setParameter(ArcGISRestDataStore.GEOMETRY_PARAM,
+        this.composeExtent(this.ws.getExtent()));
 
     try {
-      // TODO: add other parameters
-      Reference ref = (new Reference(
-          new Reference(typeName.getWebService().toString()), "query"))
-              .addQueryParameter(this.dataStore.jsonParam)
-              .addQueryParameter(this.dataStore.countonlyParam)
-              .addQueryParameter(this.dataStore.geometrytypeParam)
-              .addQueryParameter(new Parameter("geometry",
-                  this.composeExtent(this.ws.getExtent())));
-      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(ref),
+      cnt = (new Gson()).fromJson(
+          this.dataStore.retrieveJSON(
+              new URL(typeName.getWebService().toString()), params),
           Count.class);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
     }
-
-    /*
-     * https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/
-     * LGA_Profile_2014_(beta)/FeatureServer/0/query ?returnCountOnly=true
-     * &f=json &geometryType=esriGeometryEnvelope
-     * &geometry=15661191,-4742386,16706778,-4022464
-     */
 
     return cnt == null ? -1 : cnt.getCount();
   }
@@ -205,8 +195,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   @Override
   protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(
       Query arg0) throws IOException {
-    // TODO Auto-generated method stub
-    return null;
+    // TODO Just a stub so far
+    return new EmptyFeatureReader<SimpleFeatureType, SimpleFeature>(
+        this.featType);
   }
 
   /**

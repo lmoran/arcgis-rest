@@ -22,8 +22,13 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import org.restlet.resource.ResourceException;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.params.HostParams;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.feature.NameImpl;
@@ -35,21 +40,15 @@ import org.junit.runner.RunWith;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
-import org.restlet.data.MediaType;
-import org.restlet.data.Parameter;
-import org.restlet.data.Reference;
-import org.restlet.data.Status;
-import org.restlet.ext.json.JsonRepresentation;
-import org.restlet.representation.StringRepresentation;
-import org.restlet.resource.ClientResource;
 import java.io.IOException;
+import java.net.URL;
 
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ ClientResource.class, ArcGISRestDataStore.class })
+@PrepareForTest({ HttpMethod.class, ArcGISRestDataStore.class })
 public class ArcGISRestDataStoreTest {
 
   protected ArcGISRestDataStore dataStore;
@@ -71,19 +70,19 @@ public class ArcGISRestDataStoreTest {
   public void testHTTPError() throws Exception {
 
     // Catalog mock
-    ClientResource resourceCatalogMock = PowerMockito
-        .mock(ClientResource.class);
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
-                .addQueryParameter(new Parameter("f", "json")))
-        .thenReturn(resourceCatalogMock);
+    HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(catalogClientMock);
 
-    when(resourceCatalogMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(catalogMock);
 
-    when(resourceCatalogMock.getStatus())
-        .thenReturn(Status.CLIENT_ERROR_NOT_FOUND);
+    when(catalogClientMock.executeMethod(catalogMock))
+        .thenReturn(HttpStatus.SC_NOT_FOUND);
+
+    when(catalogMock.getResponseBodyAsString()).thenReturn(null);
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
@@ -99,22 +98,20 @@ public class ArcGISRestDataStoreTest {
   public void testServiceError() throws Exception {
 
     // Catalog mock
-    ClientResource resourceCatalogMock = PowerMockito
-        .mock(ClientResource.class);
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
-                .addQueryParameter(new Parameter("f", "json")))
-        .thenReturn(resourceCatalogMock);
+    HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(catalogClientMock);
 
-    when(resourceCatalogMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(catalogMock);
 
-    when(resourceCatalogMock.getStatus()).thenReturn(Status.SUCCESS_OK);
+    when(catalogClientMock.executeMethod(catalogMock))
+        .thenReturn(HttpStatus.SC_OK);
 
-    when(resourceCatalogMock.getResponseEntity())
-        .thenReturn(new JsonRepresentation(
-            ArcGISRestDataStoreFactoryTest.readJSON("test-data/error.json")));
+    when(catalogMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/error.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
@@ -131,22 +128,20 @@ public class ArcGISRestDataStoreTest {
   public void testCreateTypeNames() throws Exception {
 
     // Catalog mock
-    ClientResource resourceCatalogMock = PowerMockito
-        .mock(ClientResource.class);
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
-                .addQueryParameter(new Parameter("f", "json")))
-        .thenReturn(resourceCatalogMock);
+    HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(catalogClientMock);
 
-    when(resourceCatalogMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(catalogMock);
 
-    when(resourceCatalogMock.getStatus()).thenReturn(Status.SUCCESS_OK);
+    when(catalogClientMock.executeMethod(catalogMock))
+        .thenReturn(HttpStatus.SC_OK);
 
-    when(resourceCatalogMock.getResponseEntity())
-        .thenReturn(new JsonRepresentation(
-            ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json")));
+    when(catalogMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
@@ -165,66 +160,54 @@ public class ArcGISRestDataStoreTest {
   public void testGetFeatureSource() throws Exception {
 
     // Catalog mock
-    ClientResource resourceCatalogMock = PowerMockito
-        .mock(ClientResource.class);
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(ArcGISRestDataStoreFactoryTest.URL))
-                .addQueryParameter(new Parameter("f", "json")))
-        .thenReturn(resourceCatalogMock);
+    HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(catalogClientMock);
 
-    when(resourceCatalogMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON))
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON))
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(catalogMock);
 
-    when(resourceCatalogMock.getStatus()).thenReturn(Status.SUCCESS_OK)
-        .thenReturn(Status.SUCCESS_OK).thenReturn(Status.SUCCESS_OK);
+    when(catalogClientMock.executeMethod(catalogMock))
+    .thenReturn(HttpStatus.SC_OK)
+    .thenReturn(HttpStatus.SC_OK);
 
-    when(resourceCatalogMock.getResponseEntity())
-        .thenReturn(new JsonRepresentation(
-            ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json")))
-        .thenReturn(new JsonRepresentation(
-            ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json")));
+    when(catalogMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json"))
+    .thenReturn(ArcGISRestDataStoreFactoryTest.readJSON("test-data/catalog.json"));
 
     // Single layer mock
-    ClientResource resourceWSMock = PowerMockito.mock(ClientResource.class);
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(ArcGISRestDataStoreFactoryTest.WSURL))
-                .addQueryParameter(new Parameter("f", "json")))
-        .thenReturn(resourceWSMock);
-    when(resourceWSMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    HttpClient wsClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(wsClientMock);
 
-    when(resourceWSMock.getStatus()).thenReturn(Status.SUCCESS_OK);
+    GetMethod wsMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(wsMock);
 
-    when(resourceWSMock.getResponseEntity()).thenReturn(new JsonRepresentation(
-        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaDataset.json")));
+    when(wsClientMock.executeMethod(wsMock))
+    .thenReturn(HttpStatus.SC_OK);
+
+    when(wsMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaDataset.json"));
 
     // Feature count mock
-    ClientResource resourceCountMock = PowerMockito.mock(ClientResource.class);
+    HttpClient countClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(countClientMock);
 
-    PowerMockito.whenNew(ClientResource.class)
-        .withArguments(org.restlet.data.Method.GET,
-            (new Reference(new Reference(ArcGISRestDataStoreFactoryTest.WSURL),
-                "query"))
-                    .addQueryParameter(new Parameter("f", "json"))
-                    .addQueryParameter(new Parameter("returnCountOnly", "true"))
-                    .addQueryParameter(
-                        new Parameter("geometryType", "esriGeometryEnvelope"))
-                    .addQueryParameter(new Parameter("geometry",
-                        "1.5661191765075438E7,-4742385.357069922,1.67067772874485E7,-4022464.6054552183")))
-        .thenReturn(resourceCountMock);
+    GetMethod countMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+        .thenReturn(countMock);
 
-    when(resourceCountMock.get())
-        .thenReturn(new StringRepresentation(null, MediaType.APPLICATION_JSON));
+    when(countClientMock.executeMethod(countMock))
+    .thenReturn(HttpStatus.SC_OK);
 
-    when(resourceCountMock.getStatus()).thenReturn(Status.SUCCESS_OK);
-
-    when(resourceCountMock.getResponseEntity())
-        .thenReturn(new JsonRepresentation(
-            ArcGISRestDataStoreFactoryTest.readJSON("test-data/count.json")));
+    when(countMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/count.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultTestDataStore();
