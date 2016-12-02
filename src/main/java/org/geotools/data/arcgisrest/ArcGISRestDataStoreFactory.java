@@ -50,7 +50,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   public static final Param NAMESPACE_PARAM = new Param("namespace",
       String.class, "namespace associated to this data store", true);
-  public static final Param URL_PARAM = new Param("url", String.class,
+  public static final Param URL_PARAM = new Param("apiurl", String.class,
       "endpoint of the ArcGSI ReST API", true);
   public static final Param USER_PARAM = new Param("user", String.class,
       new SimpleInternationalString("the username of the endpoint"), false,
@@ -66,11 +66,6 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
     paramMetadata.add(URL_PARAM);
     paramMetadata.add(USER_PARAM);
     paramMetadata.add(PASSWORD_PARAM);
-  }
-
-  // TODO: not quite sure about the use of this method
-  public ArcGISRestDataStoreFactory() {
-    // TODO Auto-generated constructor stub
   }
 
   @Override
@@ -104,11 +99,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   @Override
   public boolean canProcess(Map<String, Serializable> params) {
-    try {
-      new URL((String) params.get(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key));
-    } catch (MalformedURLException e) {
-      return false;
-    }
+
     try {
       new URL((String) params.get(ArcGISRestDataStoreFactory.URL_PARAM.key));
     } catch (MalformedURLException e) {

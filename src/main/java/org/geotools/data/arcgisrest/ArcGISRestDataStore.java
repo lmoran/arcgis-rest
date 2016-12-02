@@ -218,4 +218,10 @@ public class ArcGISRestDataStore extends ContentDataStore {
     return namespace;
   }
 
+  // TODO: ?
+  @Override
+  public void dispose() {
+      super.dispose();
+  }
+  
 }
