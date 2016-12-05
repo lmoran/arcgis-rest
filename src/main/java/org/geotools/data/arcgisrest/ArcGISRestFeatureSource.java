@@ -54,6 +54,7 @@ import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
@@ -94,14 +95,18 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // Puts in typeName the typename to create a feature source
     // from, and throws an exeption if entry is not in the catalog datasets
-    int typeIndex = this.dataStore.createTypeNames().indexOf(entry.getName());
-    if (typeIndex == -1) {
+    this.typeName = null;
+    this.dataStore.getCatalog().getDataset().forEach(ds -> {
+      if (ds.getTitle().equals(entry.getName().getLocalPart())) {
+        this.typeName = ds;
+      }
+    });
+
+    if (this.typeName == null) {
       throw new IOException("Type name " + entry.getName() + " not found");
     }
-    typeName = this.dataStore.getCatalog().getDataset().get(typeIndex);
 
     // Retrieves the dataset JSON document
-    URL dsUrl = new URL(typeName.getWebService().toString());
     try {
       this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(
           new URL(typeName.getWebService().toString()), new HttpMethodParams()),
@@ -180,9 +185,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         this.composeExtent(this.ws.getExtent()));
 
     try {
-      cnt = (new Gson()).fromJson(
-          this.dataStore.retrieveJSON(
-              new URL(typeName.getWebService().toString()), params),
+      // FIXME:
+      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(
+          (new URL(typeName.getWebService().toString() + "/query")), params),
           Count.class);
     } catch (HTTPException e) {
       throw new IOException(

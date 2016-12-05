@@ -32,6 +32,7 @@ import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.geotools.feature.NameImpl;
@@ -194,9 +195,12 @@ public class ArcGISRestDataStore extends ContentDataStore {
         this.retrieveJSON(apiUrl, new HttpMethodParams()), Catalog.class);
 
     // Returns the list of datasets referenced in the catalog
+    this.entries.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
-        datasets.add(new NameImpl(namespace.toExternalForm(), ds.getTitle()));
+        Name dsName= new NameImpl(namespace.toExternalForm(), ds.getTitle()); 
+        datasets.add(dsName);
+        this.entries.put(dsName, new ContentEntry(this, dsName));
       });
     }
 

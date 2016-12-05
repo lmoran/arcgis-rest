@@ -101,6 +101,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   public boolean canProcess(Map<String, Serializable> params) {
 
     try {
+      new URL((String) params.get(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key));
       new URL((String) params.get(ArcGISRestDataStoreFactory.URL_PARAM.key));
     } catch (MalformedURLException e) {
       return false;
