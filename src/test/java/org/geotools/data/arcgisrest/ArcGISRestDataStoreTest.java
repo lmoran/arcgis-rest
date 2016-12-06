@@ -32,6 +32,8 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.store.ContentEntry;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.geotools.referencing.CRS;
 import org.junit.After;
@@ -274,4 +276,44 @@ public class ArcGISRestDataStoreTest {
     assertEquals(79, src.getCount(new Query()));
   }
 
+  @Ignore
+  @Test
+  public void testFeatures() throws Exception {
+
+    this.setCatalogMock();
+
+    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+        .createDefaultTestDataStore();
+    this.dataStore.createTypeNames();
+
+    this.setLayerMock();
+
+    FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
+        .createFeatureSource(this.dataStore.getEntry(
+            new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+
+    // Features mock
+    HttpClient featClientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(featClientMock);
+
+    GetMethod featMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class)
+        .withArguments(ArcGISRestDataStoreFactoryTest.QUERYURL)
+        .thenReturn(featMock);
+
+    when(featClientMock.executeMethod(featMock)).thenReturn(HttpStatus.SC_OK);
+    when(featMock.getResponseBodyAsString()).thenReturn(
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaFeatures.json"));
+
+    FeatureIterator iter = src.getFeatures(new Query()).features();
+    assertEquals(true, iter.hasNext());
+    iter.next();
+    assertEquals(true, iter.hasNext());
+    iter.next();
+    assertEquals(true, iter.hasNext());
+    iter.next();
+    assertEquals(false, iter.hasNext());
+    assertEquals(false, iter.hasNext());
+  }
 }

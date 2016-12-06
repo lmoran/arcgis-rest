@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -31,11 +32,11 @@ import javax.xml.ws.http.HTTPException;
 
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.DefaultResourceInfo;
-import org.geotools.data.EmptyFeatureReader;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.query.Layer;
 import org.geotools.data.arcgisrest.schema.webservice.Count;
 import org.geotools.data.arcgisrest.schema.webservice.Extent;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
@@ -48,13 +49,13 @@ import org.geotools.referencing.CRS;
 import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
@@ -185,7 +186,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         this.composeExtent(this.ws.getExtent()));
 
     try {
-      // FIXME:
+      // FIXME: the URL building is rather awkward
       cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(
           (new URL(typeName.getWebService().toString() + "/query")), params),
           Count.class);
@@ -199,10 +200,33 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(
-      Query arg0) throws IOException {
-    // TODO Just a stub so far
-    return new EmptyFeatureReader<SimpleFeatureType, SimpleFeature>(
-        this.featType);
+      Query query) throws IOException {
+    
+    HttpMethodParams params = new HttpMethodParams();
+    Layer result;
+    
+    // FIXME: sets _only_ the BBOX query 
+    params.setParameter(ArcGISRestDataStore.GEOMETRY_PARAM,
+        this.composeExtent(this.ws.getExtent()));
+
+    // Sets the atttributes to return
+    params.setParameter(ArcGISRestDataStore.ATTRIBUTES_PARAM,
+        this.composeAttributes(query));
+
+    // Executes the request
+    try {
+      // FIXME: the URL building is rather awkward
+      result = (new Gson()).fromJson(this.dataStore.retrieveJSON(
+          (new URL(typeName.getWebService().toString() + "/query")), params),
+          Layer.class);
+    } catch (HTTPException e) {
+      throw new IOException(
+          "Error " + e.getStatusCode() + " " + e.getMessage());
+    }
+
+    // Returns a reader for the result
+    return new ArcGISRestFeatureReader(
+        this.featType, result);
   }
 
   /**
@@ -216,4 +240,30 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         .add(ext.getYmin().toString()).add(ext.getXmax().toString())
         .add(ext.getYmax().toString()).toString();
   }
+
+  /**
+   * Helper method to return an attribute list as the API expects it
+   * 
+   * @param query
+   *          Query to build the attributes for
+   */
+  protected String composeAttributes(Query query) {
+
+    StringJoiner joiner = new StringJoiner(",");
+
+    if (query.retrieveAllProperties()) {
+      Iterator<AttributeDescriptor> iter = this.featType
+          .getAttributeDescriptors().iterator();
+      while (iter.hasNext()) {
+        joiner.add(iter.next().getLocalName());
+      }
+    } else {
+      for (String attr : query.getPropertyNames()) {
+        joiner.add(attr);
+      }
+    }
+
+    return joiner.toString();
+  }
+
 }

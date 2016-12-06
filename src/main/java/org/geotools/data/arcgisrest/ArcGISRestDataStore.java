@@ -53,12 +53,18 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
   // Common paramterse used n the API, together with default values
   public static HttpMethodParams defaultParams = new HttpMethodParams();
+  public static final String GEOMETRYTYPE_PARAM = "geometryType";
   public static final String GEOMETRY_PARAM = "geometry";
+  public static final String COUNT_PARAM = "returnCountOnly";
+  public static final String FORMAT_PARAM = "f";
+  public static final String ATTRIBUTES_PARAM = "outFields";
+  public static final String WITHGEOMETRY_PARAM = "returnGeometry";
+  public static final String SRS_PARAM = "spatialRel";
+
   static {
-    defaultParams.setParameter("f", "json");
-    defaultParams.setParameter("returnCountOnly", "true");
-    defaultParams.setParameter("geometryType", "esriGeometryEnvelope");
-    defaultParams.setParameter("f", "json");
+    defaultParams.setParameter(FORMAT_PARAM, "json");
+    defaultParams.setParameter(WITHGEOMETRY_PARAM, "true");
+    defaultParams.setParameter(GEOMETRYTYPE_PARAM, "esriGeometryEnvelope");
   }
 
   // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
@@ -198,7 +204,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
     this.entries.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
-        Name dsName= new NameImpl(namespace.toExternalForm(), ds.getTitle()); 
+        Name dsName = new NameImpl(namespace.toExternalForm(), ds.getTitle());
         datasets.add(dsName);
         this.entries.put(dsName, new ContentEntry(this, dsName));
       });
@@ -225,7 +231,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
   // TODO: ?
   @Override
   public void dispose() {
-      super.dispose();
+    super.dispose();
   }
-  
+
 }

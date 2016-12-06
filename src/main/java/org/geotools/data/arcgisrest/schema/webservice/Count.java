@@ -9,6 +9,9 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class Count {
 
+    /**
+     * 
+     */
     @SerializedName("count")
     @Expose
     private Integer count;

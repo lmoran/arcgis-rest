@@ -45,30 +45,10 @@
       <artifactId>esri-geometry-api</artifactId>
       <version>1.2.1</version>
     </dependency>
-   <dependency>
-    <groupId>commons-httpclient</groupId>
-    <artifactId>commons-httpclient</artifactId>
-   </dependency>
-<!--     
-    <dependency> 
-      <groupId>org.restlet</groupId>
-      <artifactId>org.restlet</artifactId>
-      <version>1.0.8</version>
-    </dependency>
     <dependency>
-      <groupId>org.restlet</groupId>
-      <artifactId>org.restlet.ext.json</artifactId>
-      <version>1.0.8</version>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.restlet.jee</groupId>
-      <artifactId>org.restlet.ext.httpclient</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.restlet.jee</groupId>
-      <artifactId>org.restlet.ext.json</artifactId>
-    </dependency>
-     -->
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
@@ -139,19 +119,20 @@
       </plugin>
 
       <plugin>
-        <!-- The schema are the ones defined by the Open Data Project at 
-          https://project-open-data.cio.gov/v1.1/schema/catalog.json -->
         <groupId>org.jsonschema2pojo</groupId>
         <artifactId>jsonschema2pojo-maven-plugin</artifactId>
-        <version>0.4.27</version>
+        <version>0.4.28</version>
         <configuration>
           <sourceDirectory>${basedir}/src/main/resources/schema</sourceDirectory>
+          <outputDirectory>${basedir}/src/main/java</outputDirectory>
           <targetPackage>org.geotools.data.arcgisrest.schema</targetPackage>
           <sourceType>jsonschema</sourceType>
           <annotationStyle>gson</annotationStyle>
-          <removeOldOutput>true</removeOldOutput>
+          <removeOldOutput>false</removeOldOutput>
           <includes>
-            <include>*.json</include>
+            <include>/catalog/*.json</include>
+            <include>/query/*.json</include>
+            <include>/webservice/*.json</include>
           </includes>
         </configuration>
         <executions>
