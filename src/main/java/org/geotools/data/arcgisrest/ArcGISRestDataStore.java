@@ -67,6 +67,9 @@ public class ArcGISRestDataStore extends ContentDataStore {
     defaultParams.setParameter(GEOMETRYTYPE_PARAM, "esriGeometryEnvelope");
   }
 
+  // Default feature type geometry attribute
+  public static final String GEOMETRY_ATTR = "the_geom";
+  
   // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
   // proper?
   // AFAIK, Arc online retuns a data.json document tha contains the ArcGIS ReST

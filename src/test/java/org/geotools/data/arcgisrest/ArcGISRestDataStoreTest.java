@@ -48,6 +48,9 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import com.vividsolutions.jts.geom.Geometry;
+
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
@@ -276,7 +279,6 @@ public class ArcGISRestDataStoreTest {
     assertEquals(79, src.getCount(new Query()));
   }
 
-  @Ignore
   @Test
   public void testFeatures() throws Exception {
 
@@ -307,12 +309,15 @@ public class ArcGISRestDataStoreTest {
         ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaFeatures.json"));
 
     FeatureIterator iter = src.getFeatures(new Query()).features();
+    SimpleFeature sf;
     assertEquals(true, iter.hasNext());
-    iter.next();
+    sf= (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
-    iter.next();
+    sf= (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
-    iter.next();
+    sf= (SimpleFeature) iter.next();
+    assertEquals("POINT (15727181.152716042 -4394485.520718031)", ((Geometry)(sf.getAttribute("the_geom"))).getCentroid().toString());
+    assertEquals("West Wimmera (S)", sf.getAttribute("LGA"));
     assertEquals(false, iter.hasNext());
     assertEquals(false, iter.hasNext());
   }

@@ -55,6 +55,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.esri.core.geometry.Geometry;
 import com.google.gson.Gson;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
@@ -141,6 +142,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
     builder.setName(new NameImpl(this.resInfo.getSchema().toString(),
         this.resInfo.getName()));
+    builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
+        com.vividsolutions.jts.geom.Geometry.class);
+    builder.setDefaultGeometry(ArcGISRestDataStore.GEOMETRY_ATTR);
 
     this.ws.getFields().forEach((fld) -> {
       Class clazz = EsriJavaMapping.get(fld.getType());
@@ -201,11 +205,13 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   @Override
   protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(
       Query query) throws IOException {
-    
+
     HttpMethodParams params = new HttpMethodParams();
     Layer result;
-    
-    // FIXME: sets _only_ the BBOX query 
+
+    // FIXME: sets the SRS
+
+    // FIXME: sets _only_ the BBOX query
     params.setParameter(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.ws.getExtent()));
 
@@ -225,8 +231,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     }
 
     // Returns a reader for the result
-    return new ArcGISRestFeatureReader(
-        this.featType, result);
+    return new ArcGISRestFeatureReader(this.featType, result);
   }
 
   /**
