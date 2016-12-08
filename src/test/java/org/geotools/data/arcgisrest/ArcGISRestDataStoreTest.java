@@ -60,11 +60,20 @@ public class ArcGISRestDataStoreTest {
 
   protected ArcGISRestDataStore dataStore;
 
+  /** OLD ONES, do not delete, since they may come in handy
   public static String TYPENAME1 = "LGA Profile 2014 (beta)";
   public static String TYPENAME2 = "Hospital Locations";
   public static String TYPENAME3 = "SportandRec";
   public static String TYPENAME4 = "ServiceAreas";
+*/
+  
+  public static String TYPENAME1 = "940854a3f46345f5af7d5c61abce6ec2";
+  public static String TYPENAME2 = "5000b3c446ed419eb590baa3832eb8f7";
+  public static String TYPENAME3 = "5f96a56cf8024d24b825b6aad94031e4";
+  public static String TYPENAME4 = "1ce60f9cf51f448b8652ee2a494efe31";
 
+  
+  
   public void setCatalogMock() throws Exception {
     // Catalog mock
     HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
@@ -210,9 +219,10 @@ public class ArcGISRestDataStoreTest {
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
             new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+    src.getSchema(); 
     assertNotNull(src);
     assertTrue(src instanceof ArcGISRestFeatureSource);
-    assertEquals("LGAProfiles2014Beta", src.getInfo().getName());
+    assertEquals(TYPENAME1, src.getInfo().getName());
     assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
         src.getInfo().getSchema().toString());
     assertEquals(CRS.decode("EPSG:3857"), src.getInfo().getCRS());
@@ -255,6 +265,7 @@ public class ArcGISRestDataStoreTest {
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
             new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+    src.getSchema(); 
 
     // Feature count mock
     HttpClient countClientMock = PowerMockito.mock(HttpClient.class);
@@ -286,6 +297,7 @@ public class ArcGISRestDataStoreTest {
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
             new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+    src.getSchema(); 
 
     // Features mock
     HttpClient featClientMock = PowerMockito.mock(HttpClient.class);

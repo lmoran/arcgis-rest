@@ -105,7 +105,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       String[] s = ds.getIdentifier().split("/");
       String s2 = s[s.length - 1];
       String s3 = s2.split("_")[0];
-      System.out.println("XXXXXXXXXXXXXXXX FEATURESOURCE S3 " + s3); // XXX
       if (s3.equals(entry.getName().getLocalPart())) {
         this.typeName = ds;
       }
@@ -141,8 +140,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     this.resInfo.setTitle(typeName.getTitle());
     this.resInfo.setName(this.ws.getServiceItemId()); // XXX
-    System.out.println("XXXXXXXXXXX TITLE " + this.resInfo.getTitle()); // XXX
-    System.out.println("XXXXXXXXXXX NAME " + this.resInfo.getName()); // XXX
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
         this.ws.getExtent().getXmin(), this.ws.getExtent().getXmax(),
         this.ws.getExtent().getYmin(), this.ws.getExtent().getYmax(),
@@ -182,7 +179,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   public Name getName() {
-    System.out.println("XXXXXXXXXXX GETNAME " + this.ws.getServiceItemId()); // XXX
     // return new NameImpl(this.ws.getName());
     return new NameImpl(this.ws.getServiceItemId());
   }

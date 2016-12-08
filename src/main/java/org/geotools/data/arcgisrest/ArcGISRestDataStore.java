@@ -138,7 +138,6 @@ public class ArcGISRestDataStore extends ContentDataStore {
     uri.setQuery(joiner.toString());
     GetMethod getMeth = new GetMethod();
     getMeth.setURI(uri);
-    System.out.println("XXXXXXXXXXXXXXXX " + uri.toString()); // XXX
     getMeth.setFollowRedirects(true);
 
     // Adds authorization if login/password is set
@@ -228,7 +227,6 @@ public class ArcGISRestDataStore extends ContentDataStore {
         String[] s = ds.getIdentifier().split("/");
         String s2 = s[s.length - 1];
         String s3 = s2.split("_")[0];
-        System.out.println("XXXXXXXXXXXXXXXX S3 " + s3); // XXX
         Name dsName = new NameImpl(namespace.toExternalForm(), s3);
         // Name dsName = new NameImpl(namespace.toExternalForm(),
         // ds.getIdentifier());

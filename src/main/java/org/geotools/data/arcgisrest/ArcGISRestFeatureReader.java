@@ -106,8 +106,6 @@ public class ArcGISRestFeatureReader
 
     /*
      * this.featureType.indexOf("LGA") for (Object attr : .) {
-     * System.out.println(attr.toString()); // XXX
-     * System.out.println(((EntrySet)(attr)).); // XXX }
      */
     // TODO:
     MapGeometry poly = OperatorImportFromJson.local()
