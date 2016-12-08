@@ -88,18 +88,25 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   }
 
   public ArcGISRestFeatureSource(ContentEntry entry, Query query)
-      throws IOException, URISyntaxException, NoSuchAuthorityCodeException,
-      FactoryException {
+      throws IOException {
 
     super(entry, query);
 
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
+  }
+
+  @Override
+  protected SimpleFeatureType buildFeatureType() throws IOException {
 
     // Puts in typeName the typename to create a feature source
     // from, and throws an exeption if entry is not in the catalog datasets
     this.typeName = null;
     this.dataStore.getCatalog().getDataset().forEach(ds -> {
-      if (ds.getTitle().equals(entry.getName().getLocalPart())) {
+      String[] s = ds.getIdentifier().split("/");
+      String s2 = s[s.length - 1];
+      String s3 = s2.split("_")[0];
+      System.out.println("XXXXXXXXXXXXXXXX FEATURESOURCE S3 " + s3); // XXX
+      if (s3.equals(entry.getName().getLocalPart())) {
         this.typeName = ds;
       }
     });
@@ -111,8 +118,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // Retrieves the dataset JSON document
     try {
       this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(
-          new URL(typeName.getWebService().toString()), new HttpMethodParams()),
-          Webservice.class);
+          new URL(typeName.getWebService().toString()),
+          ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
@@ -120,24 +127,27 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // Sets the resource info
     this.resInfo = new DefaultResourceInfo();
-    this.resInfo
-        .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
-    this.resInfo.setCRS(CRS.decode(
-        "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
+    try {
+      this.resInfo
+          .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
+      this.resInfo.setCRS(CRS.decode(
+          "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
+    } catch (URISyntaxException |  FactoryException e) {
+      throw new IOException(e.getMessage()); 
+    }
+    
     this.resInfo.setDescription(typeName.getDescription());
     this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
 
     this.resInfo.setTitle(typeName.getTitle());
-    this.resInfo.setName(this.ws.getName());
+    this.resInfo.setName(this.ws.getServiceItemId()); // XXX
+    System.out.println("XXXXXXXXXXX TITLE " + this.resInfo.getTitle()); // XXX
+    System.out.println("XXXXXXXXXXX NAME " + this.resInfo.getName()); // XXX
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
         this.ws.getExtent().getXmin(), this.ws.getExtent().getXmax(),
         this.ws.getExtent().getYmin(), this.ws.getExtent().getYmax(),
         this.resInfo.getCRS());
     this.resInfo.setBounds(geoBbox);
-  }
-
-  @Override
-  protected SimpleFeatureType buildFeatureType() throws IOException {
 
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
     builder.setName(new NameImpl(this.resInfo.getSchema().toString(),
@@ -172,21 +182,27 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   public Name getName() {
-    return new NameImpl(this.ws.getName());
+    System.out.println("XXXXXXXXXXX GETNAME " + this.ws.getServiceItemId()); // XXX
+    // return new NameImpl(this.ws.getName());
+    return new NameImpl(this.ws.getServiceItemId());
   }
 
   @Override
   protected ReferencedEnvelope getBoundsInternal(Query arg0)
       throws IOException {
-    return this.getBounds();
+    if (this.resInfo == null) {
+      this.buildFeatureType();
+    }
+    return this.resInfo.getBounds();
   }
 
   @Override
   protected int getCountInternal(Query arg0) throws IOException {
 
     Count cnt;
-    HttpMethodParams params = new HttpMethodParams();
-    params.setParameter(ArcGISRestDataStore.GEOMETRY_PARAM,
+    Map<String, Object> params = new HashMap<String, Object>(
+        ArcGISRestDataStore.DEFAULT_PARAMS);
+    params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.ws.getExtent()));
 
     try {
@@ -206,17 +222,18 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   protected FeatureReader<SimpleFeatureType, SimpleFeature> getReaderInternal(
       Query query) throws IOException {
 
-    HttpMethodParams params = new HttpMethodParams();
+    Map<String, Object> params = new HashMap<String, Object>(
+        ArcGISRestDataStore.DEFAULT_PARAMS);
     Layer result;
 
-    // FIXME: sets the SRS
+    // TODO: sets the SRS
 
-    // FIXME: sets _only_ the BBOX query
-    params.setParameter(ArcGISRestDataStore.GEOMETRY_PARAM,
-        this.composeExtent(this.ws.getExtent()));
+    // FIXME: currently it sets _only_ the BBOX query
+    params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
+        this.composeExtent(this.getBounds(query)));
 
     // Sets the atttributes to return
-    params.setParameter(ArcGISRestDataStore.ATTRIBUTES_PARAM,
+    params.put(ArcGISRestDataStore.ATTRIBUTES_PARAM,
         this.composeAttributes(query));
 
     // Executes the request
@@ -244,6 +261,21 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     return (new StringJoiner(",")).add(ext.getXmin().toString())
         .add(ext.getYmin().toString()).add(ext.getXmax().toString())
         .add(ext.getYmax().toString()).toString();
+  }
+
+  /**
+   * Helper method to return an extent as the API expects it
+   * 
+   * @param ext
+   *          Extent (as expressed in the JSON describing the layer)
+   */
+  protected String composeExtent(ReferencedEnvelope env) {
+    Extent ext= new Extent();
+    ext.setXmin(env.getMinX());
+    ext.setXmax(env.getMaxX());
+    ext.setYmin(env.getMinY());
+    ext.setYmax(env.getMaxY());
+    return this.composeExtent(ext);
   }
 
   /**

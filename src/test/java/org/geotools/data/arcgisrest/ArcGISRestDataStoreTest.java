@@ -72,8 +72,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(catalogClientMock);
 
     GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(catalogMock);
 
     when(catalogClientMock.executeMethod(catalogMock))
@@ -91,8 +90,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(wsClientMock);
 
     GetMethod wsMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.WSURL).thenReturn(wsMock);
+    PowerMockito.whenNew(GetMethod.class).withNoArguments().thenReturn(wsMock);
 
     when(wsClientMock.executeMethod(wsMock)).thenReturn(HttpStatus.SC_OK);
     when(wsMock.getResponseBodyAsString()).thenReturn(
@@ -116,8 +114,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(catalogClientMock);
 
     GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(catalogMock);
 
     when(catalogClientMock.executeMethod(catalogMock))
@@ -144,8 +141,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(catalogClientMock);
 
     GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(catalogMock);
 
     when(catalogClientMock.executeMethod(catalogMock))
@@ -174,8 +170,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(catalogClientMock);
 
     GetMethod catalogMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.URL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(catalogMock);
 
     when(catalogClientMock.executeMethod(catalogMock))
@@ -238,8 +233,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(countClientMock);
 
     GetMethod countMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.QUERYURL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(countMock);
 
     when(countClientMock.executeMethod(countMock)).thenReturn(HttpStatus.SC_OK);
@@ -268,8 +262,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(countClientMock);
 
     GetMethod countMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.QUERYURL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(countMock);
 
     when(countClientMock.executeMethod(countMock)).thenReturn(HttpStatus.SC_OK);
@@ -300,8 +293,7 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(featClientMock);
 
     GetMethod featMock = PowerMockito.mock(GetMethod.class);
-    PowerMockito.whenNew(GetMethod.class)
-        .withArguments(ArcGISRestDataStoreFactoryTest.QUERYURL)
+    PowerMockito.whenNew(GetMethod.class).withNoArguments()
         .thenReturn(featMock);
 
     when(featClientMock.executeMethod(featMock)).thenReturn(HttpStatus.SC_OK);
@@ -311,12 +303,13 @@ public class ArcGISRestDataStoreTest {
     FeatureIterator iter = src.getFeatures(new Query()).features();
     SimpleFeature sf;
     assertEquals(true, iter.hasNext());
-    sf= (SimpleFeature) iter.next();
+    sf = (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
-    sf= (SimpleFeature) iter.next();
+    sf = (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
-    sf= (SimpleFeature) iter.next();
-    assertEquals("POINT (15727181.152716042 -4394485.520718031)", ((Geometry)(sf.getAttribute("the_geom"))).getCentroid().toString());
+    sf = (SimpleFeature) iter.next();
+    assertEquals("POINT (15727181.152716042 -4394485.520718031)",
+        ((Geometry) (sf.getAttribute("the_geom"))).getCentroid().toString());
     assertEquals("West Wimmera (S)", sf.getAttribute("LGA"));
     assertEquals(false, iter.hasNext());
     assertEquals(false, iter.hasNext());
