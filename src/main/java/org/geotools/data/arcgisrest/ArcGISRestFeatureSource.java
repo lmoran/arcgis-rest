@@ -131,10 +131,10 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
           .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
       this.resInfo.setCRS(CRS.decode(
           "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
-    } catch (URISyntaxException |  FactoryException e) {
-      throw new IOException(e.getMessage()); 
+    } catch (URISyntaxException | FactoryException e) {
+      throw new IOException(e.getMessage());
     }
-    
+
     this.resInfo.setDescription(typeName.getDescription());
     this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
 
@@ -193,7 +193,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   }
 
   @Override
-  protected int getCountInternal(Query arg0) throws IOException {
+  protected int getCountInternal(Query query) throws IOException {
 
     Count cnt;
     Map<String, Object> params = new HashMap<String, Object>(
@@ -222,6 +222,11 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         ArcGISRestDataStore.DEFAULT_PARAMS);
     Layer result;
 
+    // TODO: implement the query as:
+    // 1) Execute the query to return the number of features 
+    // 2) Paginates the query in this.ws.getMaxRecordCount() batches 
+    // 3) Streams the feature collection 
+    
     // TODO: sets the SRS
 
     // FIXME: currently it sets _only_ the BBOX query
@@ -235,6 +240,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // Executes the request
     try {
       // FIXME: the URL building is rather awkward
+      // FIXME: try with GeoJSON to make it faster
+      // FIXME: try streaming to make it use less memory-hungry
+      // (for other requests taht's accettavle, but for the actual query)
       result = (new Gson()).fromJson(this.dataStore.retrieveJSON(
           (new URL(typeName.getWebService().toString() + "/query")), params),
           Layer.class);
@@ -266,7 +274,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
    *          Extent (as expressed in the JSON describing the layer)
    */
   protected String composeExtent(ReferencedEnvelope env) {
-    Extent ext= new Extent();
+    Extent ext = new Extent();
     ext.setXmin(env.getMinX());
     ext.setXmax(env.getMaxX());
     ext.setYmin(env.getMinY());

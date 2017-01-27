@@ -320,7 +320,7 @@ public class ArcGISRestDataStoreTest {
     sf = (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
     sf = (SimpleFeature) iter.next();
-    assertEquals("POINT (15727181.152716042 -4394485.520718031)",
+    assertEquals("POINT (15774377.610435748 -4415523.205102136)",
         ((Geometry) (sf.getAttribute("the_geom"))).getCentroid().toString());
     assertEquals("West Wimmera (S)", sf.getAttribute("LGA"));
     assertEquals(false, iter.hasNext());

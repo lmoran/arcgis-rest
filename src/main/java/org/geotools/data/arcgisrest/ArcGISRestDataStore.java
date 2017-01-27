@@ -64,12 +64,16 @@ public class ArcGISRestDataStore extends ContentDataStore {
   public static final String ATTRIBUTES_PARAM = "outFields";
   public static final String WITHGEOMETRY_PARAM = "returnGeometry";
   public static final String SRS_PARAM = "spatialRel";
+  
+  // Parameter values
+  public static final String FORMAT_JSON = "json";
+  public static final String FORMAT_GEOJSON = "geojson";
 
   // Default request parameter values
   public static Map<String, Object> DEFAULT_PARAMS = new HashMap<String, Object>();
 
   static {
-    DEFAULT_PARAMS.put(FORMAT_PARAM, "json");
+    DEFAULT_PARAMS.put(FORMAT_PARAM, FORMAT_JSON);
     DEFAULT_PARAMS.put(WITHGEOMETRY_PARAM, "true");
     DEFAULT_PARAMS.put(GEOMETRYTYPE_PARAM, "esriGeometryEnvelope");
   }
@@ -222,6 +226,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
     this.entries.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
+        // FIXME: kludgy
         // http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0
         // 940854a3f46345f5af7d5c61abce6ec2
         String[] s = ds.getIdentifier().split("/");
