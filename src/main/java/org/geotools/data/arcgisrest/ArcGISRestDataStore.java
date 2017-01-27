@@ -79,7 +79,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
   }
 
   // Default feature type geometry attribute
-  public static final String GEOMETRY_ATTR = "the_geom";
+  public static final String GEOMETRY_ATTR = "geometry";
 
   // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
   // proper?

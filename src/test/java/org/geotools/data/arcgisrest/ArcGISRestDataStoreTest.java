@@ -310,7 +310,7 @@ public class ArcGISRestDataStoreTest {
 
     when(featClientMock.executeMethod(featMock)).thenReturn(HttpStatus.SC_OK);
     when(featMock.getResponseBodyAsString()).thenReturn(
-        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaFeatures.json"));
+        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaFeatures.geo.json"));
 
     FeatureIterator iter = src.getFeatures(new Query()).features();
     SimpleFeature sf;
@@ -318,11 +318,9 @@ public class ArcGISRestDataStoreTest {
     sf = (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
     sf = (SimpleFeature) iter.next();
-    assertEquals(true, iter.hasNext());
-    sf = (SimpleFeature) iter.next();
-    assertEquals("POINT (15774377.610435748 -4415523.205102136)",
-        ((Geometry) (sf.getAttribute("the_geom"))).getCentroid().toString());
-    assertEquals("West Wimmera (S)", sf.getAttribute("LGA"));
+    assertEquals("POINT (16421261.466298774 -4592239.022226746)",
+        ((Geometry) (sf.getAttribute("geometry"))).getCentroid().toString());
+    assertEquals("Wellington (S)", sf.getAttribute("LGA"));
     assertEquals(false, iter.hasNext());
     assertEquals(false, iter.hasNext());
   }

@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 
 import org.geotools.data.FeatureReader;
 import org.geotools.data.arcgisrest.schema.query.Layer;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureImpl;
 import org.geotools.geojson.feature.FeatureJSON;
@@ -51,19 +52,16 @@ public class ArcGISRestFeatureReader
   protected static String ATTRIBUTES = "attributes";
   protected static String GEOMETRY = "geometry";
 
-  protected Iterator<Object> features;
+  protected FeatureIterator<SimpleFeature> features;
   protected SimpleFeatureType featureType;
-  protected List<Object> attributes;
-  protected String geometryType;
+
   protected int featIndex = 0;
 
   public ArcGISRestFeatureReader(SimpleFeatureType featureTypeIn,
-      Layer resultIn) {
-    this.features = resultIn.getFeatures().iterator();
+      String resultIn) throws IOException {
+    this.features = (new FeatureJSON()).streamFeatureCollection(resultIn);
     this.featureType = featureTypeIn;
     this.featIndex = 0;
-    this.attributes = resultIn.getFields();
-    this.geometryType = resultIn.getGeometryType();
   }
 
   /**
@@ -91,48 +89,7 @@ public class ArcGISRestFeatureReader
    */
   @Override
   public SimpleFeature next() throws IOException, NoSuchElementException {
-
-    LinkedTreeMap next = (LinkedTreeMap) this.features.next();
-
-    if (next == null) {
-      throw new NoSuchElementException();
-    }
-
-    LinkedTreeMap attributes = (LinkedTreeMap) next.get(ATTRIBUTES);
-    LinkedTreeMap geometry = (LinkedTreeMap) next.get(GEOMETRY);
-
-    String attrs = (new Gson()).toJson(attributes);
-    String geom = (new Gson()).toJson(geometry);
-
-    /*
-     * this.featureType.indexOf("LGA") for (Object attr : .) {
-     */
-    // TODO:
-    MapGeometry poly = OperatorImportFromJson.local()
-        .execute(Geometry.Type.Polygon, geom);
-    String geometryGeoJson = OperatorExportToGeoJson.local()
-        .execute(poly.getGeometry());
-
-    com.vividsolutions.jts.geom.Polygon gtGeom = (new GeometryJSON())
-        .readPolygon(geometryGeoJson);
-//    attributes.put(this.featureType.getGeometryDescriptor().getLocalName(),
-//        gtGeom);
-
-    SimpleFeatureBuilder builder = new SimpleFeatureBuilder(this.featureType);
-    SimpleFeature sf = builder.buildFeature(null);
-
-    // SimpleFeature sf = new SimpleFeatureImpl(attributes.entrySet().toArray(),
-    // this.featureType, null, false);
-    attributes.forEach((key, value) -> {
-      sf.setAttribute((String) key, value);
-    });
-
-    // sf.setDefaultGeometry(gtGeom);
-    sf.setAttribute(this.featureType.getGeometryDescriptor().getLocalName(),
-        gtGeom);
-
-    return sf;
-
+    return this.features.next();
   }
 
   @Override

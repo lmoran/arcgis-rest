@@ -46,6 +46,7 @@ import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -57,6 +58,7 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.esri.core.geometry.Geometry;
 import com.google.gson.Gson;
+import org.geotools.geojson.feature.FeatureJSON;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
@@ -183,6 +185,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     return new NameImpl(this.ws.getServiceItemId());
   }
 
+  // FIXME: should it return the bounds of the wuery, or the bounds of the
+  // layer?
   @Override
   protected ReferencedEnvelope getBoundsInternal(Query arg0)
       throws IOException {
@@ -198,8 +202,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     Count cnt;
     Map<String, Object> params = new HashMap<String, Object>(
         ArcGISRestDataStore.DEFAULT_PARAMS);
+    params.put(ArcGISRestDataStore.COUNT_PARAM, true);
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
-        this.composeExtent(this.ws.getExtent()));
+        this.composeExtent(this.getBoundsInternal(query)));
 
     try {
       // FIXME: the URL building is rather awkward
@@ -220,14 +225,17 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     Map<String, Object> params = new HashMap<String, Object>(
         ArcGISRestDataStore.DEFAULT_PARAMS);
-    Layer result;
+    String result;
 
     // TODO: implement the query as:
-    // 1) Execute the query to return the number of features 
-    // 2) Paginates the query in this.ws.getMaxRecordCount() batches 
-    // 3) Streams the feature collection 
-    
-    // TODO: sets the SRS
+    // 1) Execute the query to return the number of features
+    // 2) Paginates the query in this.ws.getMaxRecordCount() batches
+    // 3) Streams the feature collection
+
+    params.put(ArcGISRestDataStore.SRS_PARAM, this.resInfo.getCRS().getName());
+
+    params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
+        this.composeExtent(this.getBounds(query)));
 
     // FIXME: currently it sets _only_ the BBOX query
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
@@ -237,15 +245,18 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     params.put(ArcGISRestDataStore.ATTRIBUTES_PARAM,
         this.composeAttributes(query));
 
+    // Sets the outpout to GeoJSON
+    params.put(ArcGISRestDataStore.FORMAT_PARAM,
+        ArcGISRestDataStore.FORMAT_GEOJSON);
+
     // Executes the request
     try {
       // FIXME: the URL building is rather awkward
       // FIXME: try with GeoJSON to make it faster
       // FIXME: try streaming to make it use less memory-hungry
-      // (for other requests taht's accettavle, but for the actual query)
-      result = (new Gson()).fromJson(this.dataStore.retrieveJSON(
-          (new URL(typeName.getWebService().toString() + "/query")), params),
-          Layer.class);
+      // (for other requests that's accettavle, but for the actual query)
+      result = this.dataStore.retrieveJSON(
+          (new URL(typeName.getWebService().toString() + "/query")), params);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
