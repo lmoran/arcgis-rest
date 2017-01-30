@@ -20,11 +20,10 @@ package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-//import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -35,22 +34,17 @@ import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
-import org.opengis.referencing.FactoryException;
 import org.geotools.feature.NameImpl;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScheme;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.httpclient.URI;
 
 import com.google.gson.Gson;
-import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
+import com.google.gson.JsonSyntaxException;
 
 import sun.net.www.protocol.http.HttpURLConnection;
 
@@ -63,8 +57,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
   public static final String FORMAT_PARAM = "f";
   public static final String ATTRIBUTES_PARAM = "outFields";
   public static final String WITHGEOMETRY_PARAM = "returnGeometry";
-  public static final String SRS_PARAM = "spatialRel";
-  
+
   // Parameter values
   public static final String FORMAT_JSON = "json";
   public static final String FORMAT_GEOJSON = "geojson";
@@ -77,6 +70,9 @@ public class ArcGISRestDataStore extends ContentDataStore {
     DEFAULT_PARAMS.put(WITHGEOMETRY_PARAM, "true");
     DEFAULT_PARAMS.put(GEOMETRYTYPE_PARAM, "esriGeometryEnvelope");
   }
+
+  // Cache of feature sources
+  protected Map<Name, ArcGISRestFeatureSource> featureSources = new HashMap<Name, ArcGISRestFeatureSource>();
 
   // Default feature type geometry attribute
   public static final String GEOMETRY_ATTR = "geometry";
@@ -92,7 +88,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected Catalog catalog;
 
   public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
-      String password) throws MalformedURLException {
+      String password)
+      throws MalformedURLException, JsonSyntaxException, IOException {
 
     super();
     try {
@@ -111,6 +108,76 @@ public class ArcGISRestDataStore extends ContentDataStore {
     }
     this.user = user;
     this.password = password;
+
+    // Retrieves the catalog JSON document
+    try {
+      this.catalog = (new Gson())
+          .fromJson(this.retrieveJSON(apiUrl, DEFAULT_PARAMS), Catalog.class);
+    } catch (JsonSyntaxException | IOException e) {
+      LOGGER.log(Level.SEVERE, "JSON syntax error " + e.getMessage(), e);
+      throw (e);
+    }
+
+    // Returns the list of datasets referenced in the catalog
+    this.entries.clear();
+    if (this.catalog.getDataset() != null) {
+      this.catalog.getDataset().forEach((ds) -> {
+        // FIXME: kludgy
+        // http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0
+        // 940854a3f46345f5af7d5c61abce6ec2
+        String[] s = ds.getIdentifier().split("/");
+        String s2 = s[s.length - 1];
+        String s3 = s2.split("_")[0];
+        Name dsName = new NameImpl(namespace, s3);
+
+        ContentEntry entry = new ContentEntry(this, dsName);
+        this.entries.put(dsName, entry);
+      });
+    }
+  }
+
+  /**
+   * Returns the datastore catalog
+   * 
+   * @return Catalog
+   */
+  public Catalog getCatalog() {
+    return this.catalog;
+  }
+
+  @Override
+  protected List<Name> createTypeNames() {
+    List<Name> typeNames = new ArrayList<Name>();
+    Iterator<ContentEntry> iter = this.entries.values().iterator();
+    while (iter.hasNext()) {
+      typeNames.add(iter.next().getName());
+    }
+
+    return typeNames;
+  }
+
+  @Override
+  protected ContentFeatureSource createFeatureSource(ContentEntry entry)
+      throws IOException {
+
+    ArcGISRestFeatureSource featureSource = this.featureSources
+        .get(entry.getName());
+    if (featureSource == null) {
+      featureSource = new ArcGISRestFeatureSource(entry, new Query());
+      this.featureSources.put(entry.getName(), featureSource);
+    }
+
+    return featureSource;
+  }
+
+  public URL getNamespace() {
+    return namespace;
+  }
+
+  // TODO: ?
+  @Override
+  public void dispose() {
+    super.dispose();
   }
 
   /**
@@ -145,8 +212,6 @@ public class ArcGISRestDataStore extends ContentDataStore {
     getMeth.setFollowRedirects(true);
 
     // Adds authorization if login/password is set
-    // FIXME: not quite sure null is passed when the field is left empty, better
-    // check
     if (this.user != null && this.password != null) {
       getMeth.addRequestHeader("Authentication",
           (new UsernamePasswordCredentials(user, password)).toString());
@@ -183,7 +248,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
       }
     }
 
-    // Extracts the response
+    // Extracts the response\
+    // FIXME: getResponseBodyAsStream
     String json = getMeth.getResponseBodyAsString();
     getMeth.releaseConnection();
 
@@ -195,71 +261,13 @@ public class ArcGISRestDataStore extends ContentDataStore {
     if (err != null && err.getError() != null
         && err.getError().getCode() != null
         && err.getError().getCode() != HttpURLConnection.HTTP_OK) {
-      throw new IOException(
-          "ArcGIS ReST API Error : " + err.getError().getCode() + " "
-              + err.getError().getMessage() + " URL:" + url.toString());
+      throw new IOException("ArcGIS ReST API Error : "
+          + err.getError().getCode() + " " + err.getError().getMessage() + " "
+          + err.getError().getDetails() + " URL:" + url.toString());
     }
 
     // Returns the JSON response
     return json;
-  }
-
-  /**
-   * Returns the datastore catalog
-   * 
-   * @return Catalog
-   */
-  public Catalog getCatalog() {
-    return this.catalog;
-  }
-
-  @Override
-  protected List<Name> createTypeNames() throws IOException {
-
-    List<Name> datasets = new ArrayList<Name>();
-
-    // Retrieves the catalog JSON document
-    this.catalog = (new Gson())
-        .fromJson(this.retrieveJSON(apiUrl, DEFAULT_PARAMS), Catalog.class);
-
-    // Returns the list of datasets referenced in the catalog
-    this.entries.clear();
-    if (this.catalog.getDataset() != null) {
-      this.catalog.getDataset().forEach((ds) -> {
-        // FIXME: kludgy
-        // http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0
-        // 940854a3f46345f5af7d5c61abce6ec2
-        String[] s = ds.getIdentifier().split("/");
-        String s2 = s[s.length - 1];
-        String s3 = s2.split("_")[0];
-        Name dsName = new NameImpl(namespace.toExternalForm(), s3);
-        // Name dsName = new NameImpl(namespace.toExternalForm(),
-        // ds.getIdentifier());
-        datasets.add(dsName);
-
-        ContentEntry entry = new ContentEntry(this, dsName);
-        this.entries.put(dsName, entry);
-      });
-    }
-
-    return datasets;
-  }
-
-  @Override
-  protected ContentFeatureSource createFeatureSource(ContentEntry entry)
-      throws IOException {
-
-      return new ArcGISRestFeatureSource(entry, new Query());
-  }
-
-  public URL getNamespace() {
-    return namespace;
-  }
-
-  // TODO: ?
-  @Override
-  public void dispose() {
-    super.dispose();
   }
 
 }

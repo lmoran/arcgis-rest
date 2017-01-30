@@ -27,25 +27,20 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HostParams;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
-import org.geotools.data.store.ContentEntry;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.geotools.referencing.CRS;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import java.io.IOException;
-import java.net.URL;
 
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -60,20 +55,18 @@ public class ArcGISRestDataStoreTest {
 
   protected ArcGISRestDataStore dataStore;
 
-  /** OLD ONES, do not delete, since they may come in handy
-  public static String TYPENAME1 = "LGA Profile 2014 (beta)";
-  public static String TYPENAME2 = "Hospital Locations";
-  public static String TYPENAME3 = "SportandRec";
-  public static String TYPENAME4 = "ServiceAreas";
-*/
-  
-  public static String TYPENAME1 = "940854a3f46345f5af7d5c61abce6ec2";
-  public static String TYPENAME2 = "5000b3c446ed419eb590baa3832eb8f7";
-  public static String TYPENAME3 = "5f96a56cf8024d24b825b6aad94031e4";
-  public static String TYPENAME4 = "1ce60f9cf51f448b8652ee2a494efe31";
+  /**
+   * OLD ONES, do not delete, since they may come in handy public static String
+   * TYPENAME1 = "LGA Profile 2014 (beta)"; public static String TYPENAME2 =
+   * "Hospital Locations"; public static String TYPENAME3 = "SportandRec";
+   * public static String TYPENAME4 = "ServiceAreas";
+   */
 
-  
-  
+  public static String TYPENAME1 = "1ce60f9cf51f448b8652ee2a494efe31";
+  public static String TYPENAME2 = "5f96a56cf8024d24b825b6aad94031e4";
+  public static String TYPENAME3 = "5000b3c446ed419eb590baa3832eb8f7";
+  public static String TYPENAME4 = "940854a3f46345f5af7d5c61abce6ec2";
+
   public void setCatalogMock() throws Exception {
     // Catalog mock
     HttpClient catalogClientMock = PowerMockito.mock(HttpClient.class);
@@ -131,9 +124,9 @@ public class ArcGISRestDataStoreTest {
 
     when(catalogMock.getResponseBodyAsString()).thenReturn(null);
 
-    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-        .createDefaultTestDataStore();
     try {
+      this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+          .createDefaultTestDataStore();
       List<Name> names = this.dataStore.createTypeNames();
     } catch (IOException e) {
       assertTrue(e.getMessage().contains("404"));
@@ -159,10 +152,9 @@ public class ArcGISRestDataStoreTest {
     when(catalogMock.getResponseBodyAsString()).thenReturn(
         ArcGISRestDataStoreFactoryTest.readJSON("test-data/error.json"));
 
-    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-        .createDefaultTestDataStore();
-
     try {
+      this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+          .createDefaultTestDataStore();
       List<Name> names = this.dataStore.createTypeNames();
     } catch (IOException e) {
       assertTrue(e.getMessage().contains("400 Cannot perform query"));
@@ -218,11 +210,11 @@ public class ArcGISRestDataStoreTest {
 
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
-            new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
-    src.getSchema(); 
+            new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME4)));
+    src.getSchema();
     assertNotNull(src);
     assertTrue(src instanceof ArcGISRestFeatureSource);
-    assertEquals(TYPENAME1, src.getInfo().getName());
+    assertEquals(TYPENAME4, src.getInfo().getName());
     assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
         src.getInfo().getSchema().toString());
     assertEquals(CRS.decode("EPSG:3857"), src.getInfo().getCRS());
@@ -265,7 +257,7 @@ public class ArcGISRestDataStoreTest {
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
             new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
-    src.getSchema(); 
+    src.getSchema();
 
     // Feature count mock
     HttpClient countClientMock = PowerMockito.mock(HttpClient.class);
@@ -297,7 +289,7 @@ public class ArcGISRestDataStoreTest {
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
             new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
-    src.getSchema(); 
+    src.getSchema();
 
     // Features mock
     HttpClient featClientMock = PowerMockito.mock(HttpClient.class);
@@ -309,13 +301,18 @@ public class ArcGISRestDataStoreTest {
         .thenReturn(featMock);
 
     when(featClientMock.executeMethod(featMock)).thenReturn(HttpStatus.SC_OK);
-    when(featMock.getResponseBodyAsString()).thenReturn(
-        ArcGISRestDataStoreFactoryTest.readJSON("test-data/lgaFeatures.geo.json"));
+    when(featMock.getResponseBodyAsString())
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSON("test-data/lgaFeatures.geo.json"));
 
+    FeatureCollection<SimpleFeatureType, SimpleFeature> fc = src
+        .getFeatures(new Query());
     FeatureIterator iter = src.getFeatures(new Query()).features();
-    SimpleFeature sf;
+
+    assertEquals(CRS.decode("EPSG:3857"),
+        fc.getSchema().getCoordinateReferenceSystem());
     assertEquals(true, iter.hasNext());
-    sf = (SimpleFeature) iter.next();
+    SimpleFeature sf = (SimpleFeature) iter.next();
     assertEquals(true, iter.hasNext());
     sf = (SimpleFeature) iter.next();
     assertEquals("POINT (16421261.466298774 -4592239.022226746)",

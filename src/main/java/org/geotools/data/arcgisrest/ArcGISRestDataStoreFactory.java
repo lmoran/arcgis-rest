@@ -27,13 +27,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.Parameter;
-import org.geotools.data.DataAccessFactory.Param;
 import org.geotools.util.SimpleInternationalString;
 import org.geotools.util.logging.Logging;
 

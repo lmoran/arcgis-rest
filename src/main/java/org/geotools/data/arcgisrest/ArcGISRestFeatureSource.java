@@ -30,13 +30,11 @@ import java.util.StringJoiner;
 
 import javax.xml.ws.http.HTTPException;
 
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.geotools.data.DefaultResourceInfo;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.Query;
 import org.geotools.data.ResourceInfo;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
-import org.geotools.data.arcgisrest.schema.query.Layer;
 import org.geotools.data.arcgisrest.schema.webservice.Count;
 import org.geotools.data.arcgisrest.schema.webservice.Extent;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
@@ -46,19 +44,15 @@ import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
-import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import com.esri.core.geometry.Geometry;
 import com.google.gson.Gson;
-import org.geotools.geojson.feature.FeatureJSON;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
@@ -95,6 +89,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     super(entry, query);
 
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
+    this.buildFeatureType(); 
   }
 
   @Override
@@ -136,7 +131,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     } catch (URISyntaxException | FactoryException e) {
       throw new IOException(e.getMessage());
     }
-
+    
     this.resInfo.setDescription(typeName.getDescription());
     this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
 
@@ -149,6 +144,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     this.resInfo.setBounds(geoBbox);
 
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+    builder.setCRS(this.resInfo.getCRS());
     builder.setName(new NameImpl(this.resInfo.getSchema().toString(),
         this.resInfo.getName()));
     builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
@@ -231,9 +227,10 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // 1) Execute the query to return the number of features
     // 2) Paginates the query in this.ws.getMaxRecordCount() batches
     // 3) Streams the feature collection
-
-    params.put(ArcGISRestDataStore.SRS_PARAM, this.resInfo.getCRS().getName());
-
+    if (this.featType == null) {
+      this.buildFeatureType();
+    }
+  
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 
