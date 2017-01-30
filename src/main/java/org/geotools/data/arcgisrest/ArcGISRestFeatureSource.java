@@ -56,12 +56,6 @@ import com.google.gson.Gson;
 
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
-  protected ArcGISRestDataStore dataStore;
-  protected Webservice ws;
-  protected SimpleFeatureType featType;
-  protected DefaultResourceInfo resInfo;
-  protected Dataset typeName;
-
   // FIXME: Are we user ArcGIS ReST API always uses this for the "spatial"
   // property?
   protected static CoordinateReferenceSystem SPATIALCRS;
@@ -83,13 +77,20 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     EsriJavaMapping.put("esriFieldTypeXML", java.lang.String.class);
   }
 
+  protected ArcGISRestDataStore dataStore;
+  protected Webservice ws;
+  protected SimpleFeatureType featType;
+  protected DefaultResourceInfo resInfo;
+  protected Dataset typeName;
+  protected String objectIdField;
+
   public ArcGISRestFeatureSource(ContentEntry entry, Query query)
       throws IOException {
 
     super(entry, query);
 
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
-    this.buildFeatureType(); 
+    this.buildFeatureType();
   }
 
   @Override
@@ -131,7 +132,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     } catch (URISyntaxException | FactoryException e) {
       throw new IOException(e.getMessage());
     }
-    
+
     this.resInfo.setDescription(typeName.getDescription());
     this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
 
@@ -142,6 +143,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         this.ws.getExtent().getYmin(), this.ws.getExtent().getYmax(),
         this.resInfo.getCRS());
     this.resInfo.setBounds(geoBbox);
+    this.objectIdField = (ws.getObjectIdField() != null) ? ws.getObjectIdField()
+        : ws.getGlobalIdField();
 
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
     builder.setCRS(this.resInfo.getCRS());
@@ -230,7 +233,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     if (this.featType == null) {
       this.buildFeatureType();
     }
-  
+
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 
@@ -299,6 +302,13 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   protected String composeAttributes(Query query) {
 
     StringJoiner joiner = new StringJoiner(",");
+
+    // The Object ID is always in to ensure the GeoJSON is correctly processed
+    // by the parser,
+    // For instance, when the GeoJSON properties is null (i.e., only the
+    // geometry is
+    // returned), WMS GetMap requests return an empty image
+    joiner.add(this.objectIdField);
 
     if (query.retrieveAllProperties()) {
       Iterator<AttributeDescriptor> iter = this.featType
