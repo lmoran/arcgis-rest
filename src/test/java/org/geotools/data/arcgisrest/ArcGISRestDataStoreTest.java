@@ -214,7 +214,7 @@ public class ArcGISRestDataStoreTest {
     src.getSchema();
     assertNotNull(src);
     assertTrue(src instanceof ArcGISRestFeatureSource);
-    assertEquals(TYPENAME4, src.getInfo().getName());
+    assertEquals("LGAProfiles2014Beta", src.getInfo().getName());
     assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
         src.getInfo().getSchema().toString());
     assertEquals(CRS.decode("EPSG:3857"), src.getInfo().getCRS());
@@ -256,7 +256,7 @@ public class ArcGISRestDataStoreTest {
 
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
         .createFeatureSource(this.dataStore.getEntry(
-            new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+            new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, "LGA Profile 2014 (beta)")));
     src.getSchema();
 
     // Feature count mock

@@ -44,6 +44,7 @@ import org.geotools.data.store.ContentFeatureSource;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.util.SimpleInternationalString;
 import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -78,10 +79,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   }
 
   protected ArcGISRestDataStore dataStore;
-  protected Webservice ws;
+  // protected Webservice ws;
   protected SimpleFeatureType featType;
   protected DefaultResourceInfo resInfo;
-  protected Dataset typeName;
   protected String objectIdField;
 
   public ArcGISRestFeatureSource(ContentEntry entry, Query query)
@@ -90,36 +90,27 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     super(entry, query);
 
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
-    this.buildFeatureType();
   }
 
   @Override
   protected SimpleFeatureType buildFeatureType() throws IOException {
 
-    // Puts in typeName the typename to create a feature source
-    // from, and throws an exeption if entry is not in the catalog datasets
-    this.typeName = null;
-    this.dataStore.getCatalog().getDataset().forEach(ds -> {
-      String[] s = ds.getIdentifier().split("/");
-      String s2 = s[s.length - 1];
-      String s3 = s2.split("_")[0];
-      if (s3.equals(entry.getName().getLocalPart())) {
-        this.typeName = ds;
-      }
-    });
-
-    if (this.typeName == null) {
-      throw new IOException("Type name " + entry.getName() + " not found");
+    // XXX
+    if (this.featType != null) {
+      return this.featType;
     }
 
-    // Retrieves the dataset JSON document
-    try {
-      this.ws = (new Gson()).fromJson(this.dataStore.retrieveJSON(
-          new URL(typeName.getWebService().toString()),
-          ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
-    } catch (HTTPException e) {
-      throw new IOException(
-          "Error " + e.getStatusCode() + " " + e.getMessage());
+    // Puts in typeName the typename to create a feature source
+    // from, and throws an exeption if entry is not in the catalog datasets
+    Dataset ds = this.dataStore.getDataset(this.entry.getName());
+
+    Webservice ws = (new Gson()).fromJson(
+        this.dataStore.retrieveJSON(new URL(ds.getWebService().toString()),
+            ArcGISRestDataStore.DEFAULT_PARAMS),
+        Webservice.class);
+
+    if (ws == null) {
+      throw new IOException("Type name " + entry.getName() + " not found");
     }
 
     // Sets the resource info
@@ -128,19 +119,21 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       this.resInfo
           .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
       this.resInfo.setCRS(CRS.decode(
-          "EPSG:" + this.ws.getExtent().getSpatialReference().getLatestWkid()));
+          "EPSG:" + ws.getExtent().getSpatialReference().getLatestWkid()));
     } catch (URISyntaxException | FactoryException e) {
       throw new IOException(e.getMessage());
     }
 
-    this.resInfo.setDescription(typeName.getDescription());
-    this.resInfo.setKeywords(new HashSet(typeName.getKeyword()));
+    this.resInfo.setDescription(ds.getDescription()); // XXX
+    this.resInfo.setKeywords(new HashSet(ds.getKeyword()));
 
-    this.resInfo.setTitle(typeName.getTitle());
-    this.resInfo.setName(this.ws.getServiceItemId()); // XXX
+    this.resInfo.setTitle(ds.getTitle());
+    this.resInfo.setName(ws.getName()); // XXX .replaceAll("\\s+", ""));
+    // XXX this.resInfo.setName(this.ws.getServiceItemId());
+
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
-        this.ws.getExtent().getXmin(), this.ws.getExtent().getXmax(),
-        this.ws.getExtent().getYmin(), this.ws.getExtent().getYmax(),
+        ws.getExtent().getXmin(), ws.getExtent().getXmax(),
+        ws.getExtent().getYmin(), ws.getExtent().getYmax(),
         this.resInfo.getCRS());
     this.resInfo.setBounds(geoBbox);
     this.objectIdField = (ws.getObjectIdField() != null) ? ws.getObjectIdField()
@@ -153,8 +146,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
         com.vividsolutions.jts.geom.Geometry.class);
     builder.setDefaultGeometry(ArcGISRestDataStore.GEOMETRY_ATTR);
+    builder.setDescription(new SimpleInternationalString(ds.getDescription())); // XXX
 
-    this.ws.getFields().forEach((fld) -> {
+    ws.getFields().forEach((fld) -> {
       Class clazz = EsriJavaMapping.get(fld.getType());
       if (clazz == null) {
         this.getDataStore().getLogger()
@@ -164,8 +158,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     });
 
     this.featType = builder.buildFeatureType();
+    this.featType.getUserData().put("serviceUrl", ds.getWebService());
 
-    return featType;
+    return this.featType;
   }
 
   @Override
@@ -180,8 +175,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   public Name getName() {
-    // return new NameImpl(this.ws.getName());
-    return new NameImpl(this.ws.getServiceItemId());
+    return this.entry.getName();
   }
 
   // FIXME: should it return the bounds of the wuery, or the bounds of the
@@ -208,8 +202,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     try {
       // FIXME: the URL building is rather awkward
       cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(
-          (new URL(typeName.getWebService().toString() + "/query")), params),
-          Count.class);
+          (new URL(this.featType.getUserData().get("serviceUrl") + "/query")),
+          params), Count.class);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
@@ -230,10 +224,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // 1) Execute the query to return the number of features
     // 2) Paginates the query in this.ws.getMaxRecordCount() batches
     // 3) Streams the feature collection
-    if (this.featType == null) {
-      this.buildFeatureType();
-    }
-
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 
@@ -256,7 +246,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       // FIXME: try streaming to make it use less memory-hungry
       // (for other requests that's accettavle, but for the actual query)
       result = this.dataStore.retrieveJSON(
-          (new URL(typeName.getWebService().toString() + "/query")), params);
+          (new URL(this.featType.getUserData().get("serviceUrl") + "/query")),
+          params); // XXX
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());

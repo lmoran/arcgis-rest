@@ -29,8 +29,12 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.logging.Level;
 
+import javax.xml.ws.http.HTTPException;
+
 import org.geotools.data.Query;
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
+import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
@@ -38,6 +42,7 @@ import org.opengis.feature.type.Name;
 import org.geotools.feature.NameImpl;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -86,12 +91,14 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected String user;
   protected String password;
   protected Catalog catalog;
+  protected Map<Name, Dataset> datasets = new HashMap<Name, Dataset>();
 
   public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
       String password)
       throws MalformedURLException, JsonSyntaxException, IOException {
 
     super();
+
     try {
       this.namespace = new URL(namespace);
     } catch (MalformedURLException e) {
@@ -118,22 +125,18 @@ public class ArcGISRestDataStore extends ContentDataStore {
       throw (e);
     }
 
-    // Returns the list of datasets referenced in the catalog
+    // Sets the list of the datasets referenced in the catalog
     this.entries.clear();
+    this.datasets.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
-        // FIXME: kludgy
-        // http://data.dhs.opendata.arcgis.com/datasets/940854a3f46345f5af7d5c61abce6ec2_0
-        // 940854a3f46345f5af7d5c61abce6ec2
-        String[] s = ds.getIdentifier().split("/");
-        String s2 = s[s.length - 1];
-        String s3 = s2.split("_")[0];
-        Name dsName = new NameImpl(namespace, s3);
-
+        Name dsName = new NameImpl(namespace, ds.getTitle());
         ContentEntry entry = new ContentEntry(this, dsName);
+        this.datasets.put(dsName, ds);
         this.entries.put(dsName, entry);
       });
     }
+
   }
 
   /**
@@ -143,6 +146,17 @@ public class ArcGISRestDataStore extends ContentDataStore {
    */
   public Catalog getCatalog() {
     return this.catalog;
+  }
+
+  /**
+   * Returns the ArcGIS ReST API dataset given its name
+   * 
+   * @param name
+   *          Dataset name
+   * @return Dataset
+   */
+  public Dataset getDataset(Name name) {
+    return this.datasets.get(name);
   }
 
   @Override
