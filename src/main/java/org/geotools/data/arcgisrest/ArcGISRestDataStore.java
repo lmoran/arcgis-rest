@@ -43,9 +43,14 @@ import org.geotools.feature.NameImpl;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.URI;
 
 import com.google.gson.Gson;
@@ -119,7 +124,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
     // Retrieves the catalog JSON document
     try {
       this.catalog = (new Gson())
-          .fromJson(this.retrieveJSON(apiUrl, DEFAULT_PARAMS), Catalog.class);
+          .fromJson(this.retrieveJSON("GET",apiUrl, DEFAULT_PARAMS), Catalog.class);
     } catch (JsonSyntaxException | IOException e) {
       LOGGER.log(Level.SEVERE, "JSON syntax error " + e.getMessage(), e);
       throw (e);
@@ -130,7 +135,16 @@ public class ArcGISRestDataStore extends ContentDataStore {
     this.datasets.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
-        Name dsName = new NameImpl(namespace, ds.getTitle());
+        Webservice ws= null;
+        try {
+          ws = (new Gson()).fromJson(this.retrieveJSON("GET",
+              new URL(ds.getWebService().toString()),
+              ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
+        } catch (JsonSyntaxException | IOException e) {
+          LOGGER.log(Level.SEVERE, "Error during retrieval of dataset " + ds.getWebService(), e);
+        }
+
+        Name dsName = new NameImpl(namespace, ws.getName());
         ContentEntry entry = new ContentEntry(this, dsName);
         this.datasets.put(dsName, ds);
         this.entries.put(dsName, entry);
@@ -206,12 +220,21 @@ public class ArcGISRestDataStore extends ContentDataStore {
    * @throws IOException
    * @throws InterruptedException
    */
-  public String retrieveJSON(URL url, Map<String, Object> params)
-      throws IOException {
+  public String retrieveJSON(String methType, URL url,
+      Map<String, Object> params) throws IOException {
 
     // Creates the HTTP client and set the request parameters (the one passed to
     // the methed and the default ones)
     HttpClient client = new HttpClient();
+
+    URI uri = new URI(url.toString(), false);
+
+    HttpMethodBase meth;
+    if (methType.equals("GET")) {
+      meth = new GetMethod();
+    } else {
+      meth = new PostMethod();
+    }
 
     // FIXME: there must be a better way... possibly with
     // https://hc.apache.org/httpclient-3.x/apidocs/org/apache/commons/httpclient/NameValuePair.html
@@ -219,32 +242,38 @@ public class ArcGISRestDataStore extends ContentDataStore {
     params.forEach((key, value) -> {
       joiner.add(key + "=" + value.toString());
     });
-    URI uri = new URI(url.toString(), false);
-    uri.setQuery(joiner.toString());
-    GetMethod getMeth = new GetMethod();
-    getMeth.setURI(uri);
-    getMeth.setFollowRedirects(true);
+
+    if (methType.equals("GET")) {
+      uri.setQuery(joiner.toString());
+    } else {
+      ((PostMethod) (meth)).setRequestEntity(new StringRequestEntity(
+          joiner.toString(), "application/x-www-form-urlencoded", null));
+    }
+
+    // postMeth.setFollowRedirects(true);
+    meth.setURI(uri);
 
     // Adds authorization if login/password is set
     if (this.user != null && this.password != null) {
-      getMeth.addRequestHeader("Authentication",
+      meth.addRequestHeader("Authentication",
           (new UsernamePasswordCredentials(user, password)).toString());
     }
 
     // Re-tries the request if necessary
     while (true) {
 
-      // Executes the request
-      int status = client.executeMethod(getMeth);
+      // Executes the request (a POST, since the URL may get too long)
+      int status = client.executeMethod(meth);
 
       // If HTTP error, throws an exception
       if (status != HttpStatus.SC_OK) {
-        throw new IOException("HTTP Error: " + status + " " + url.toString());
+        throw new IOException("HTTP Error: " + status + " URL: "
+            + url.toString() + " BODY: " + joiner.toString());
       }
 
       // Retrieve the wait period is returned by the server
       int wait = 0;
-      Header header = getMeth.getResponseHeader("Retry-After");
+      Header header = meth.getResponseHeader("Retry-After");
       if (header != null) {
         wait = Integer.valueOf(header.getValue());
       }
@@ -264,8 +293,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
     // Extracts the response\
     // FIXME: getResponseBodyAsStream
-    String json = getMeth.getResponseBodyAsString();
-    getMeth.releaseConnection();
+    String json = meth.getResponseBodyAsString();
+    meth.releaseConnection();
 
     // Checks the return JSON for error (yes, ESRI thinks a good idea to return
     // errors with 200 error codes)

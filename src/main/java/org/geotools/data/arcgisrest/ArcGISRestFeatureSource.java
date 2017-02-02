@@ -80,7 +80,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   protected ArcGISRestDataStore dataStore;
   // protected Webservice ws;
-  protected SimpleFeatureType featType;
+  // protected SimpleFeatureType featType;
   protected DefaultResourceInfo resInfo;
   protected String objectIdField;
 
@@ -95,42 +95,40 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   @Override
   protected SimpleFeatureType buildFeatureType() throws IOException {
 
-    // XXX
-    if (this.featType != null) {
-      return this.featType;
-    }
-
-    // Puts in typeName the typename to create a feature source
-    // from, and throws an exeption if entry is not in the catalog datasets
+    // Extracts informaton about the type name (as per this.entry) from the API
     Dataset ds = this.dataStore.getDataset(this.entry.getName());
-
-    Webservice ws = (new Gson()).fromJson(
-        this.dataStore.retrieveJSON(new URL(ds.getWebService().toString()),
-            ArcGISRestDataStore.DEFAULT_PARAMS),
-        Webservice.class);
+    Webservice ws = (new Gson()).fromJson(this.dataStore.retrieveJSON("GET",
+        new URL(ds.getWebService().toString()),
+        ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
 
     if (ws == null) {
       throw new IOException("Type name " + entry.getName() + " not found");
     }
 
-    // Sets the resource info
+    // Sets the information about the resource
     this.resInfo = new DefaultResourceInfo();
     try {
       this.resInfo
           .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
+    } catch (URISyntaxException e) {
+      // FIXME: this not nice either
+      throw new IOException(e.getMessage());
+    }
+    try {
       this.resInfo.setCRS(CRS.decode(
           "EPSG:" + ws.getExtent().getSpatialReference().getLatestWkid()));
-    } catch (URISyntaxException | FactoryException e) {
+    } catch (FactoryException e) {
+      // FIXME: this is not nice
       throw new IOException(e.getMessage());
     }
 
-    this.resInfo.setDescription(ds.getDescription()); // XXX
+    this.resInfo.setDescription(ds.getDescription()); // FIXME: the abstract of
+    // the feature type is not
+    // set
     this.resInfo.setKeywords(new HashSet(ds.getKeyword()));
 
     this.resInfo.setTitle(ds.getTitle());
-    this.resInfo.setName(ws.getName()); // XXX .replaceAll("\\s+", ""));
-    // XXX this.resInfo.setName(this.ws.getServiceItemId());
-
+    this.resInfo.setName(ws.getName());
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
         ws.getExtent().getXmin(), ws.getExtent().getXmax(),
         ws.getExtent().getYmin(), ws.getExtent().getYmax(),
@@ -139,15 +137,15 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     this.objectIdField = (ws.getObjectIdField() != null) ? ws.getObjectIdField()
         : ws.getGlobalIdField();
 
+    // Builds the feature type
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-    builder.setCRS(this.resInfo.getCRS());
-    builder.setName(new NameImpl(this.resInfo.getSchema().toString(),
-        this.resInfo.getName()));
-    builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
-        com.vividsolutions.jts.geom.Geometry.class);
-    builder.setDefaultGeometry(ArcGISRestDataStore.GEOMETRY_ATTR);
+    builder.setCRS(this.resInfo.getCRS()); // NOTE: this has ot be deon before
+                                           // other settings, lest the SRS is
+                                           // not set
+    builder.setName(this.entry.getName());
     builder.setDescription(new SimpleInternationalString(ds.getDescription())); // XXX
 
+    // Adds non-geometry field descriptions
     ws.getFields().forEach((fld) -> {
       Class clazz = EsriJavaMapping.get(fld.getType());
       if (clazz == null) {
@@ -157,10 +155,14 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       builder.add(fld.getName(), clazz);
     });
 
-    this.featType = builder.buildFeatureType();
-    this.featType.getUserData().put("serviceUrl", ds.getWebService());
+    // Adds the geometry field
+    builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
+        com.vividsolutions.jts.geom.Geometry.class);
 
-    return this.featType;
+    this.schema = builder.buildFeatureType();
+    this.schema.getUserData().put("serviceUrl", ds.getWebService());
+
+    return this.schema;
   }
 
   @Override
@@ -178,8 +180,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     return this.entry.getName();
   }
 
-  // FIXME: should it return the bounds of the wuery, or the bounds of the
-  // layer?
+  // FIXME: it shuold return the bounds of the query, if not null
   @Override
   protected ReferencedEnvelope getBoundsInternal(Query arg0)
       throws IOException {
@@ -201,8 +202,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     try {
       // FIXME: the URL building is rather awkward
-      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON(
-          (new URL(this.featType.getUserData().get("serviceUrl") + "/query")),
+      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON("POST",
+          (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
           params), Count.class);
     } catch (HTTPException e) {
       throw new IOException(
@@ -245,8 +246,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       // FIXME: try with GeoJSON to make it faster
       // FIXME: try streaming to make it use less memory-hungry
       // (for other requests that's accettavle, but for the actual query)
-      result = this.dataStore.retrieveJSON(
-          (new URL(this.featType.getUserData().get("serviceUrl") + "/query")),
+      result = this.dataStore.retrieveJSON("POST",
+          (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
           params); // XXX
     } catch (HTTPException e) {
       throw new IOException(
@@ -254,7 +255,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     }
 
     // Returns a reader for the result
-    return new ArcGISRestFeatureReader(this.featType, result);
+    return new ArcGISRestFeatureReader(this.schema, result);
   }
 
   /**
@@ -302,14 +303,25 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     joiner.add(this.objectIdField);
 
     if (query.retrieveAllProperties()) {
-      Iterator<AttributeDescriptor> iter = this.featType
-          .getAttributeDescriptors().iterator();
+      Iterator<AttributeDescriptor> iter = this.schema.getAttributeDescriptors()
+          .iterator();
       while (iter.hasNext()) {
-        joiner.add(iter.next().getLocalName());
+        AttributeDescriptor attr = iter.next();
+        // Skips ID and geometry field
+        if (!attr.getLocalName().equalsIgnoreCase(this.objectIdField)
+            && !attr.getLocalName().equalsIgnoreCase(
+                this.schema.getGeometryDescriptor().getLocalName())) {
+          joiner.add(iter.next().getLocalName());
+        }
       }
     } else {
       for (String attr : query.getPropertyNames()) {
-        joiner.add(attr);
+        // Skips ID and geometry field
+        if (!attr.equalsIgnoreCase(this.objectIdField)
+            && !attr.equalsIgnoreCase(
+                this.schema.getGeometryDescriptor().getLocalName())) {
+          joiner.add(attr);
+        }
       }
     }
 
