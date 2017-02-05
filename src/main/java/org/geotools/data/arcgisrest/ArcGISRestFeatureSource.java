@@ -19,6 +19,7 @@
 package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -67,7 +68,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     EsriJavaMapping.put("esriFieldTypeDate", java.util.Date.class);
     EsriJavaMapping.put("esriFieldTypeDouble", java.lang.Double.class);
     EsriJavaMapping.put("esriFieldTypeGUID", java.lang.String.class);
-    // TODO: EsriJavaMapping.put("esriFieldTypeGeometry", "");
     EsriJavaMapping.put("esriFieldTypeGlobalID", java.lang.Long.class);
     EsriJavaMapping.put("esriFieldTypeInteger", java.lang.Integer.class);
     EsriJavaMapping.put("esriFieldTypeOID", java.lang.String.class);
@@ -76,6 +76,18 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     EsriJavaMapping.put("esriFieldTypeSmallInteger", java.lang.Integer.class);
     EsriJavaMapping.put("esriFieldTypeString", java.lang.String.class);
     EsriJavaMapping.put("esriFieldTypeXML", java.lang.String.class);
+  }
+
+  protected static Map<String, Class> EsriJTSMapping = new HashMap<String, Class>();
+  static {
+    EsriJTSMapping.put("esriGeometryPoint",
+        com.vividsolutions.jts.geom.Point.class);
+    EsriJTSMapping.put("esriGeometryMultipoint",
+        com.vividsolutions.jts.geom.MultiPoint.class);
+    EsriJTSMapping.put("esriGeometryPolyline",
+        com.vividsolutions.jts.geom.MultiLineString.class);
+    EsriJTSMapping.put("esriGeometryPolygon",
+        com.vividsolutions.jts.geom.MultiPolygon.class);
   }
 
   protected ArcGISRestDataStore dataStore;
@@ -97,9 +109,12 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // Extracts informaton about the type name (as per this.entry) from the API
     Dataset ds = this.dataStore.getDataset(this.entry.getName());
-    Webservice ws = (new Gson()).fromJson(this.dataStore.retrieveJSON("GET",
-        new URL(ds.getWebService().toString()),
-        ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
+    Webservice ws = (new Gson())
+        .fromJson(
+            ArcGISRestDataStore.InputStreamToString(this.dataStore.retrieveJSON(
+                "GET", new URL(ds.getWebService().toString()),
+                ArcGISRestDataStore.DEFAULT_PARAMS)),
+            Webservice.class);
 
     if (ws == null) {
       throw new IOException("Type name " + entry.getName() + " not found");
@@ -156,8 +171,13 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     });
 
     // Adds the geometry field
-    builder.add(ArcGISRestDataStore.GEOMETRY_ATTR,
-        com.vividsolutions.jts.geom.Geometry.class);
+    Class clazz = EsriJTSMapping.get(ws.getGeometryType());
+    if (clazz == null) {
+      this.getDataStore().getLogger()
+          .severe("Geometry type " + ws.getGeometryType() + " not found");
+    }
+
+    builder.add(ArcGISRestDataStore.GEOMETRY_ATTR, clazz);
 
     this.schema = builder.buildFeatureType();
     this.schema.getUserData().put("serviceUrl", ds.getWebService());
@@ -202,9 +222,11 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     try {
       // FIXME: the URL building is rather awkward
-      cnt = (new Gson()).fromJson(this.dataStore.retrieveJSON("POST",
-          (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
-          params), Count.class);
+      cnt = (new Gson()).fromJson(ArcGISRestDataStore
+          .InputStreamToString(this.dataStore.retrieveJSON("POST",
+              (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
+              params)),
+          Count.class);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
@@ -219,12 +241,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     Map<String, Object> params = new HashMap<String, Object>(
         ArcGISRestDataStore.DEFAULT_PARAMS);
-    String result;
+    InputStream result;
 
-    // TODO: implement the query as:
-    // 1) Execute the query to return the number of features
-    // 2) Paginates the query in this.ws.getMaxRecordCount() batches
-    // 3) Streams the feature collection
+    // TODO: use stream to receive the JSON back from ArcGIS
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 

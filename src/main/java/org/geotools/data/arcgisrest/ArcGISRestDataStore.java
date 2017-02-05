@@ -19,6 +19,7 @@
 package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import org.apache.commons.httpclient.URI;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
+import sun.misc.IOUtils;
 import sun.net.www.protocol.http.HttpURLConnection;
 
 public class ArcGISRestDataStore extends ContentDataStore {
@@ -122,9 +124,11 @@ public class ArcGISRestDataStore extends ContentDataStore {
     this.password = password;
 
     // Retrieves the catalog JSON document
+    InputStream response = null;
     try {
-      this.catalog = (new Gson())
-          .fromJson(this.retrieveJSON("GET",apiUrl, DEFAULT_PARAMS), Catalog.class);
+      response = this.retrieveJSON("GET", apiUrl, DEFAULT_PARAMS);
+      this.catalog = (new Gson()).fromJson(
+          ArcGISRestDataStore.InputStreamToString(response), Catalog.class);
     } catch (JsonSyntaxException | IOException e) {
       LOGGER.log(Level.SEVERE, "JSON syntax error " + e.getMessage(), e);
       throw (e);
@@ -135,13 +139,17 @@ public class ArcGISRestDataStore extends ContentDataStore {
     this.datasets.clear();
     if (this.catalog.getDataset() != null) {
       this.catalog.getDataset().forEach((ds) -> {
-        Webservice ws= null;
+        Webservice ws = null;
+        InputStream responseWs = null;
         try {
-          ws = (new Gson()).fromJson(this.retrieveJSON("GET",
-              new URL(ds.getWebService().toString()),
-              ArcGISRestDataStore.DEFAULT_PARAMS), Webservice.class);
+          ws = (new Gson()).fromJson(
+              ArcGISRestDataStore.InputStreamToString(this.retrieveJSON("GET",
+                  new URL(ds.getWebService().toString()),
+                  ArcGISRestDataStore.DEFAULT_PARAMS)),
+              Webservice.class);
         } catch (JsonSyntaxException | IOException e) {
-          LOGGER.log(Level.SEVERE, "Error during retrieval of dataset " + ds.getWebService(), e);
+          LOGGER.log(Level.SEVERE,
+              "Error during retrieval of dataset " + ds.getWebService(), e);
         }
 
         Name dsName = new NameImpl(namespace, ws.getName());
@@ -220,7 +228,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
    * @throws IOException
    * @throws InterruptedException
    */
-  public String retrieveJSON(String methType, URL url,
+  public InputStream retrieveJSON(String methType, URL url,
       Map<String, Object> params) throws IOException {
 
     // Creates the HTTP client and set the request parameters (the one passed to
@@ -291,16 +299,19 @@ public class ArcGISRestDataStore extends ContentDataStore {
       }
     }
 
-    // Extracts the response\
-    // FIXME: getResponseBodyAsStream
-    String json = meth.getResponseBodyAsString();
-    meth.releaseConnection();
+    // Extracts the response
+    InputStream response = meth.getResponseBodyAsStream();
 
     // Checks the return JSON for error (yes, ESRI thinks a good idea to return
     // errors with 200 error codes)
+    // FIXME: this should be moved to where retrieveJSON is called, so that
+    // where the parsing into an object fails, the checking for an erro rmessage
+    // is performed
+    /*
     org.geotools.data.arcgisrest.schema.catalog.Error err = (new Gson())
-        .fromJson(json,
+        .fromJson(ArcGISRestDataStore.InputStreamToString(response),
             org.geotools.data.arcgisrest.schema.catalog.Error.class);
+    meth.releaseConnection();
     if (err != null && err.getError() != null
         && err.getError().getCode() != null
         && err.getError().getCode() != HttpURLConnection.HTTP_OK) {
@@ -308,9 +319,25 @@ public class ArcGISRestDataStore extends ContentDataStore {
           + err.getError().getCode() + " " + err.getError().getMessage() + " "
           + err.getError().getDetails() + " URL:" + url.toString());
     }
-
+*/
     // Returns the JSON response
-    return json;
+    return response;
+  }
+
+  /**
+   * Helper method to convert an entire InputStream to a String and close the
+   * steeam
+   * 
+   * @param response
+   *          input stream to convert to a String
+   * @returns the converted String
+   * @throws IOException
+   */
+  public static String InputStreamToString(InputStream istream)
+      throws IOException {
+    String s = new String(IOUtils.readFully(istream, -1, true));
+    istream.close();
+    return s;
   }
 
 }

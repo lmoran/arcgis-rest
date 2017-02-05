@@ -19,6 +19,7 @@
 package org.geotools.data.arcgisrest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -58,7 +59,7 @@ public class ArcGISRestFeatureReader
   protected int featIndex = 0;
 
   public ArcGISRestFeatureReader(SimpleFeatureType featureTypeIn,
-      String resultIn) throws IOException {
+      InputStream resultIn) throws IOException {
     this.features = (new FeatureJSON()).streamFeatureCollection(resultIn);
     this.featureType = featureTypeIn;
     this.featIndex = 0;
