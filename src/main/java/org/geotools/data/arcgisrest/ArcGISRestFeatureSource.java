@@ -46,7 +46,6 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.util.SimpleInternationalString;
-import org.geotools.feature.NameImpl;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -274,7 +273,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     }
 
     // Returns a reader for the result
-    return new ArcGISRestFeatureReader(this.schema, result);
+    return new ArcGISRestFeatureReader(this.schema, result, this.dataStore.getLogger());
   }
 
   /**

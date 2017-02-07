@@ -36,6 +36,7 @@ import org.geotools.data.arcgisrest.ArcGISRestDataStoreFactory;
 import org.geotools.util.logging.Logging;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.Mockito.*;
@@ -123,12 +124,14 @@ public class ArcGISRestDataStoreFactoryTest {
     return (new ArcGISRestDataStoreFactory()).createDataStore(params);
   }
 
+  @Ignore 
   @Test(expected = UnsupportedOperationException.class)
   public void testCreateNewDataStore() throws UnsupportedOperationException {
     (new ArcGISRestDataStoreFactory()).createNewDataStore(params);
   }
 
   
+  @Ignore 
   @Test
   public void testCanProcess() {
     // Nothing set
@@ -155,6 +158,7 @@ public class ArcGISRestDataStoreFactoryTest {
     assertTrue(dsf.canProcess(params));
   }
 
+  @Ignore 
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedNamespace() throws IOException {
     LOGGER.setLevel(Level.OFF);
@@ -162,6 +166,7 @@ public class ArcGISRestDataStoreFactoryTest {
     LOGGER.setLevel(Level.FINEST);
   }
 
+  @Ignore 
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedURL() throws IOException {
     LOGGER.setLevel(Level.OFF);

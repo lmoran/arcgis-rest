@@ -299,8 +299,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
       }
     }
 
-    // Extracts the response
-    InputStream response = meth.getResponseBodyAsStream();
+    // Extracts an returns the response
+    return meth.getResponseBodyAsStream();
 
     // Checks the return JSON for error (yes, ESRI thinks a good idea to return
     // errors with 200 error codes)
@@ -320,8 +320,6 @@ public class ArcGISRestDataStore extends ContentDataStore {
           + err.getError().getDetails() + " URL:" + url.toString());
     }
 */
-    // Returns the JSON response
-    return response;
   }
 
   /**
