@@ -346,11 +346,9 @@ public class GeoJSONParserTest {
 
     assertEquals(1.0f, ((Point)(feat.getDefaultGeometry())).getX(), 0.1f);
     assertEquals(2.0f, ((Point)(feat.getDefaultGeometry())).getY(), 0.1f);
-//    assertEquals(1.0f, ((Point)(feat.getAttribute(fType.getGeometryDescriptor().getLocalName()))).getX(), 0.1f);
-//    assertEquals(2.0f, ((Point)(feat.getAttribute(fType.getGeometryDescriptor().getLocalName()))).getY(), 0.1f);
     assertEquals("value0", feat.getAttribute("vstring"));
     assertTrue((Boolean)(feat.getAttribute("vboolean")));
-    assertEquals(12, ((Double)feat.getAttribute("vint")).intValue());
+    assertEquals(12, feat.getAttribute("vint"));
   }
   
   @Test
@@ -362,9 +360,6 @@ public class GeoJSONParserTest {
                 .getBytes()))).parseFeature(this.fType);
     assertEquals(1.0f, ((Point)(feat.getDefaultGeometry())).getX(), 0.1f);
     assertEquals(2.0f, ((Point)(feat.getDefaultGeometry())).getY(), 0.1f);
-
-//    assertEquals(1.0f, ((Point)(feat.getAttribute(fType.getGeometryDescriptor().getLocalName()))).getX(), 0.1f);
-//    assertEquals(2.0f, ((Point)(feat.getAttribute(fType.getGeometryDescriptor().getLocalName()))).getY(), 0.1f);
   }
   
   @Test

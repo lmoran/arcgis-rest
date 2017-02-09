@@ -321,7 +321,8 @@ public class GeoJSONParser {
     try {
       if (this.reader.peek() == JsonToken.NULL) {
         this.reader.nextNull();
-        throw(new MalformedJsonException("just here to avoid repeating the return statement"));
+        throw (new MalformedJsonException(
+            "just here to avoid repeating the return statement"));
       }
     } catch (IllegalStateException | MalformedJsonException e) {
       return builder.point();
@@ -404,7 +405,8 @@ public class GeoJSONParser {
     try {
       if (this.reader.peek() == JsonToken.NULL) {
         this.reader.nextNull();
-        throw(new MalformedJsonException("just here to avoid repeating the return statement"));
+        throw (new MalformedJsonException(
+            "just here to avoid repeating the return statement"));
       }
     } catch (IllegalStateException | MalformedJsonException e) {
       return props;
@@ -456,6 +458,7 @@ public class GeoJSONParser {
     Geometry geom = null;
     Map<String, Object> props = new HashMap<String, Object>();
     List<Object> values = new ArrayList();
+    SimpleFeatureBuilder builder = new SimpleFeatureBuilder(featureType);
 
     // Parses the feature
     try {
@@ -492,25 +495,21 @@ public class GeoJSONParser {
       throw (new NoSuchElementException(e.getMessage()));
     }
 
-    // Builds the feature, inserting the properties in an array in the same
+    // Builds the feature, inserting the properties in the same
     // order of the atterbiutes in the feature type
-    
     for (AttributeDescriptor attr : featureType.getAttributeDescriptors()) {
 
-//      if (featureType.getGeometryDescriptor().getLocalName().equals(attr.getLocalName())) {
-//        values.add(geom);
-//      }
-
-      if (props.get(attr.getLocalName()) != null) {
-        values.add(props.get(attr.getLocalName()));
+      if (featureType.getGeometryDescriptor().getLocalName()
+          .equals(attr.getLocalName())) {
+        builder.add(geom);
+      } else {
+        builder.add(props.get(attr.getLocalName()));
       }
     }
 
-    SimpleFeature feat= new SimpleFeatureImpl(values, featureType,
-        SimpleFeatureBuilder.createDefaultFeatureIdentifier(FEATURES)); // TODO:
-    feat.setDefaultGeometry(geom);
-    
-    return feat;
+    // SimpleFeatureBuilder.createDefaultFeatureIdentifier(FEATURES)); // TODO:
+
+    return builder.buildFeature(null);
   }
 
   /**
