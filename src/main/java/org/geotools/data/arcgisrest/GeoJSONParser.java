@@ -23,23 +23,49 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.logging.Level;
 
+import org.geotools.feature.FeatureImpl;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.collection.FeatureIteratorImpl;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureImpl;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.filter.identity.FeatureId;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
+import com.vividsolutions.jts.geom.Location;
+
+import com.vividsolutions.jts.geom.Geometry;
+import org.opengis.geometry.primitive.Primitive;
+
+import com.vividsolutions.jts.geom.GeometryFactory;
+
+import org.geotools.geometry.jts.GeometryBuilder;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.MultiPoint;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiLineString;
+import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geomgraph.Position;
+import com.vividsolutions.jts.geom.MultiPolygon;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * GeoJSON parsing of simple features using a streaming parser
+ * GeoJSON parsing of simple ,mbi-dimensional features using a streaming parser
  * 
  * @author lmorandini
  *
@@ -59,11 +85,26 @@ public class GeoJSONParser {
   static public final String FEATURE_GEOMETRY_COORDINATES = "coordinates";
   static public final String FEATURE_PROPERTIES = "properties";
 
+  static public final String GEOMETRY_POINT = "Point";
+  static public final String GEOMETRY_MULTIPOINT = "MultiPoint";
+  static public final String GEOMETRY_LINE = "LineString";
+  static public final String GEOMETRY_MULTILINE = "MultiLineString";
+  static public final String GEOMETRY_POLYGON = "Polygon";
+  static public final String GEOMETRY_MULTIPOLYGON = "MultiPolygon";
+
   protected static final String ATTRIBUTES = "attributes";
   protected static final String GEOMETRY = "geometry";
 
+  // Read from which features are read
   protected JsonReader reader;
 
+  /**
+   * Constructor
+   * 
+   * @param iStream
+   *          the stream to read features from
+   * @throws UnsupportedEncodingException
+   */
   public GeoJSONParser(InputStream iStream)
       throws UnsupportedEncodingException {
     this.reader = new JsonReader(new InputStreamReader(iStream, "UTF-8")); // FIXME:
@@ -87,14 +128,14 @@ public class GeoJSONParser {
   }
 
   /**
-   * Helper funciton to convert a List of Float to an array of floats
+   * Helper funciton to convert a List of double to an array of doubles
    */
-  public static float[] listToArray(List<Float> coords) {
+  public static double[] listToArray(List<Double> coords) {
 
-    float[] arr = new float[coords.size()];
+    double[] arr = new double[coords.size()];
     int i = 0;
-    for (Float f : coords) {
-      arr[i++] = f.floatValue();
+    for (Double d : coords) {
+      arr[i++] = d.doubleValue();
     }
     return arr;
   }
@@ -108,7 +149,7 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  protected void parsePointCoordinates(List<Float> coords)
+  protected void parsePointCoordinates(List<Double> coords)
       throws JsonSyntaxException, IOException, IllegalStateException {
 
     this.reader.beginArray();
@@ -117,8 +158,8 @@ public class GeoJSONParser {
     while (this.reader.hasNext()) {
 
       // Read X and Y
-      coords.add((float) this.reader.nextDouble());
-      coords.add((float) this.reader.nextDouble());
+      coords.add(this.reader.nextDouble());
+      coords.add(this.reader.nextDouble());
 
       // FIXME: Discards Z
       if (this.reader.peek() == JsonToken.NUMBER) {
@@ -137,10 +178,10 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public float[] parseCoordinateArray()
+  public double[] parseCoordinateArray()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<Float> coords = new ArrayList<Float>();
+    List<Double> coords = new ArrayList<Double>();
 
     this.reader.beginArray();
 
@@ -160,10 +201,10 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public float[] parsePointCoordinates()
+  public double[] parsePointCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<Float> coords = new ArrayList<Float>();
+    List<Double> coords = new ArrayList<Double>();
     this.parsePointCoordinates(coords);
     return GeoJSONParser.listToArray(coords);
   }
@@ -175,11 +216,11 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public List<float[]> parseMultiPointCoordinates()
+  public List<double[]> parseMultiPointCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<float[]> points = new ArrayList<float[]>();
-    
+    List<double[]> points = new ArrayList<double[]>();
+
     this.reader.beginArray();
     while (this.reader.hasNext()) {
       points.add(this.parsePointCoordinates());
@@ -196,7 +237,7 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateExceptionadds them to coords
    */
-  public float[] parseLineCoordinates()
+  public double[] parseLineStringCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
     return this.parseCoordinateArray();
@@ -209,14 +250,14 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public List<float[]> parseMultiLineCoordinates()
+  public List<double[]> parseMultiLineStringCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<float[]> lines = new ArrayList<float[]>();
+    List<double[]> lines = new ArrayList<double[]>();
 
     this.reader.beginArray();
     while (this.reader.hasNext()) {
-      lines.add(this.parseLineCoordinates());
+      lines.add(this.parseLineStringCoordinates());
     }
     this.reader.endArray();
     return lines;
@@ -229,14 +270,14 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public List<float[]> parsePolygonCoordinates()
+  public List<double[]> parsePolygonCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<float[]> rings = new ArrayList<float[]>();
+    List<double[]> rings = new ArrayList<double[]>();
 
     this.reader.beginArray();
     while (this.reader.hasNext()) {
-      rings.add(this.parseLineCoordinates());
+      rings.add(this.parseLineStringCoordinates());
     }
     this.reader.endArray();
     return rings;
@@ -249,10 +290,10 @@ public class GeoJSONParser {
    * @throws IOException,
    *           JsonSyntaxException, IllegalStateException
    */
-  public List<List<float[]>> parseMultiPolygonCoordinates()
+  public List<List<double[]>> parseMultiPolygonCoordinates()
       throws JsonSyntaxException, IOException, IllegalStateException {
 
-    List<List<float[]>> polys = new ArrayList<List<float[]>>();
+    List<List<double[]>> polys = new ArrayList<List<double[]>>();
 
     this.reader.beginArray();
     while (this.reader.hasNext()) {
@@ -263,78 +304,213 @@ public class GeoJSONParser {
   }
 
   /**
-   * Parses a GepJSON feature that conforms to the given FeatureType
+   * Parses a Geometry in GeoJSON format
+   * 
+   * @return list of arrays with ring coordinates
+   * @throws IOException,
+   *           JsonSyntaxException, IllegalStateException
+   */
+  public Geometry parseGeometry()
+      throws JsonSyntaxException, IOException, IllegalStateException {
+
+    double[] coords;
+    GeometryBuilder builder = new GeometryBuilder();
+    GeometryFactory geomFactory = new GeometryFactory();
+
+    // If geometry is null, returns a null point
+    try {
+      if (this.reader.peek() == JsonToken.NULL) {
+        this.reader.nextNull();
+        throw(new MalformedJsonException("just here to avoid repeating the return statement"));
+      }
+    } catch (IllegalStateException | MalformedJsonException e) {
+      return builder.point();
+    }
+
+    this.reader.beginObject();
+
+    // Check the presence of feature type
+    if (!reader.nextName().equals(FEATURE_TYPE)) {
+      throw (new JsonSyntaxException("Geometry type expected"));
+    }
+
+    switch (reader.nextString()) {
+
+    case GEOMETRY_POINT:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      coords = this.parsePointCoordinates();
+      this.reader.endObject();
+      return (Geometry) builder.point(coords[0], coords[1]);
+
+    case GEOMETRY_MULTIPOINT:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      List<double[]> pointCoords = this.parseMultiPointCoordinates();
+      ;
+      Point[] points = new Point[pointCoords.size()];
+      for (int i = 0; i < pointCoords.size(); i++) {
+        points[i] = (Point) builder.point(pointCoords.get(i)[0],
+            pointCoords.get(i)[1]);
+      }
+      this.reader.endObject();
+      return (Geometry) new MultiPoint(points, geomFactory);
+
+    case GEOMETRY_LINE:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      coords = this.parseLineStringCoordinates();
+      this.reader.endObject();
+      return (Geometry) builder.lineString(coords);
+
+    case GEOMETRY_POLYGON:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      List<double[]> rings = this.parsePolygonCoordinates();
+      this.reader.endObject();
+      return (Geometry) builder.polygon(rings.get(0)); // FIXME: what about
+                                                       // holes?
+
+    case GEOMETRY_MULTIPOLYGON:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      List<List<double[]>> polyArrays = this.parseMultiPolygonCoordinates();
+      Polygon[] polys = new Polygon[polyArrays.size()];
+      int i = 0;
+      for (List<double[]> array : polyArrays) {
+        polys[i++] = builder.polygon(array.get(0)); // FIXME: what about holes?
+      }
+      this.reader.endObject();
+      return (Geometry) builder.multiPolygon(polys);
+
+    default:
+      throw (new JsonSyntaxException("Unrecognized geometry type"));
+    }
+
+  }
+
+  /**
+   * Parses a GeoJSON feature properties. The values returned in a map is a
+   * Boolean, a String, or a Double (for every numeric values)
+   * 
+   * @return A map with property names as keys, and property values as values
+   * 
+   * @throws IOException,
+   *           JsonSyntaxException, IllegalStateException
+   */
+  public Map<String, Object> parseProperties()
+      throws JsonSyntaxException, IOException, IllegalStateException {
+
+    Map<String, Object> props = new HashMap<String, Object>();
+    String name;
+
+    // If properties is null, returns a null point
+    // If geometry is null, returns a null point
+    try {
+      if (this.reader.peek() == JsonToken.NULL) {
+        this.reader.nextNull();
+        throw(new MalformedJsonException("just here to avoid repeating the return statement"));
+      }
+    } catch (IllegalStateException | MalformedJsonException e) {
+      return props;
+    }
+
+    this.reader.beginObject();
+
+    try {
+      while (this.reader.hasNext()) {
+        name = this.reader.nextName();
+
+        switch (this.reader.peek()) {
+
+        case BOOLEAN:
+          props.put(name, this.reader.nextBoolean());
+          break;
+
+        case NUMBER:
+          props.put(name, this.reader.nextDouble());
+          break;
+
+        case STRING:
+          props.put(name, this.reader.nextString());
+          break;
+
+        default:
+          throw (new JsonSyntaxException("Value expected"));
+        }
+      }
+    } catch (IOException | IllegalStateException e) {
+      throw (new NoSuchElementException(e.getMessage()));
+    }
+
+    this.reader.endObject();
+
+    return props;
+  }
+
+  /**
+   * Parses a GeoJSON feature that conforms to the given FeatureType
    * 
    * @param featureType
    *          The type the feature has to conform to
    * 
-   * @return the parsed feature TODO
+   * @return the parsed feature
    */
   public SimpleFeature parseFeature(SimpleFeatureType featureType) {
+
+    Geometry geom = null;
+    Map<String, Object> props = new HashMap<String, Object>();
+    List<Object> values = new ArrayList();
+
+    // Parses the feature
     try {
       this.reader.beginObject();
 
       while (this.reader.hasNext()) {
-        String name = this.reader.nextName();
-        System.out.println("**** inside feature " + name);
 
-        switch (name) {
+        String s = this.reader.nextName(); // XXX
+        switch (s) {
 
         case ArcGISRestFeatureReader.FEATURE_TYPE:
-
-          if (ArcGISRestFeatureReader.FEATURE_TYPE
-              .equals(reader.nextString())) {
-            throw new IOException("Incorrect feature type ");
+          if (!FEATURE_TYPE_VALUE.equals(this.reader.nextString())) {
+            throw (new JsonSyntaxException(
+                "Type should be equal to '" + FEATURE_TYPE_VALUE + "'"));
           }
           break;
 
         case ArcGISRestFeatureReader.FEATURE_GEOMETRY:
-
-          this.reader.beginObject();
-          while (this.reader.hasNext()) {
-            String geomName = this.reader.nextName();
-            System.out.println("**** geomName " + geomName);
-
-            String geomType;
-            switch (geomName) {
-
-            case ArcGISRestFeatureReader.FEATURE_GEOMETRY_TYPE:
-              geomType = reader.nextString();
-              System.out.println("**** geomTyoe " + geomType);
-              break;
-
-            case ArcGISRestFeatureReader.FEATURE_GEOMETRY_COORDINATES:
-              System.out.println("**** coordinates ");
-              reader.beginArray();
-              while (reader.hasNext()) {
-                reader.skipValue(); // XXX
-              }
-              reader.endArray();
-              break;
-            }
-          }
-          this.reader.endObject();
+          geom = this.parseGeometry();
+          break;
 
         case ArcGISRestFeatureReader.FEATURE_PROPERTIES:
-          this.reader.beginObject();
-          while (this.reader.hasNext()) {
-            System.out.println("**** prop " + name);
-            reader.skipValue();
-          }
-          this.reader.endObject();
+          props = this.parseProperties();
           break;
-        }
 
+        default:
+          throw (new JsonSyntaxException("Unrecognized feature format"));
+        }
       }
 
       this.reader.endObject();
 
-      // (new Gson()).fromJson(json, classOfT)
-      return new SimpleFeatureImpl(null, featureType, null);
-
     } catch (IOException | IllegalStateException e) {
       throw (new NoSuchElementException(e.getMessage()));
     }
+
+    // Builds the feature, inserting the properties in an array in the same
+    // order of the atterbiutes in the feature type
+    
+    for (AttributeDescriptor attr : featureType.getAttributeDescriptors()) {
+
+//      if (featureType.getGeometryDescriptor().getLocalName().equals(attr.getLocalName())) {
+//        values.add(geom);
+//      }
+
+      if (props.get(attr.getLocalName()) != null) {
+        values.add(props.get(attr.getLocalName()));
+      }
+    }
+
+    SimpleFeature feat= new SimpleFeatureImpl(values, featureType,
+        SimpleFeatureBuilder.createDefaultFeatureIdentifier(FEATURES)); // TODO:
+    feat.setDefaultGeometry(geom);
+    
+    return feat;
   }
 
   /**
@@ -363,5 +539,21 @@ public class GeoJSONParser {
      * return; }
      */
     return new FeatureIteratorImpl<SimpleFeature>(null);
+  }
+
+  /**
+   * Checks the next token is expProp, trow an exception if not
+   * 
+   * @param expProp
+   *          expected property name
+   * @throws JsonSyntaxException
+   *           ,IoException
+   */
+  protected void checkPropertyName(String expProp)
+      throws JsonSyntaxException, IOException {
+
+    if (!expProp.equals(this.reader.nextName())) {
+      throw (new JsonSyntaxException("'" + expProp + "' property expected"));
+    }
   }
 }

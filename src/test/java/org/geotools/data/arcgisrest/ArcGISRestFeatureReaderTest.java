@@ -51,6 +51,7 @@ public class ArcGISRestFeatureReaderTest {
     builder.add("vint", Integer.class);
     builder.add("vfloat", Float.class);
     builder.add("vstring", String.class);
+    builder.add("vboolean", Boolean.class);
     builder.add("geometry", Geometry.class);
 
     this.fType = builder.buildFeatureType();
