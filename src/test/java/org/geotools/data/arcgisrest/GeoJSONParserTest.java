@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
-import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.util.logging.Logging;
 import org.junit.Before;
@@ -35,15 +34,12 @@ import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
-import java.util.NoSuchElementException;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.MalformedJsonException;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.Point;
-
-import jdk.nashorn.internal.ir.annotations.Ignore;
 
 public class GeoJSONParserTest {
 
@@ -73,7 +69,7 @@ public class GeoJSONParserTest {
 
     List<Double> coordList = new ArrayList<Double>();
 
-    (new GeoJSONParser(new ByteArrayInputStream("[1.0, 2.0]".getBytes())))
+    (new GeoJSONParser(new ByteArrayInputStream("[1.0, 2.0]".getBytes()), this.fType, null))
         .parsePointCoordinates(coordList);
     double[] expCoords = { 1.0f, 2.0f };
 
@@ -84,7 +80,7 @@ public class GeoJSONParserTest {
   public void parsePointCoordinateArray() throws Exception {
 
     double[] coords = (new GeoJSONParser(
-        new ByteArrayInputStream("[1.0, 2.0]".getBytes())))
+        new ByteArrayInputStream("[1.0, 2.0]".getBytes()), this.fType, null))
             .parsePointCoordinates();
     double[] expCoords = { 1.0f, 2.0f };
 
@@ -96,7 +92,7 @@ public class GeoJSONParserTest {
 
     List<Double> coordList = new ArrayList<Double>();
 
-    (new GeoJSONParser(new ByteArrayInputStream("[1.0 2.0]".getBytes())))
+    (new GeoJSONParser(new ByteArrayInputStream("[1.0 2.0]".getBytes()), this.fType, null))
         .parsePointCoordinates(coordList);
   }
 
@@ -106,7 +102,7 @@ public class GeoJSONParserTest {
     List<Double> coordList = new ArrayList<Double>();
 
     (new GeoJSONParser(
-        new ByteArrayInputStream("[1.0, 2.0, 3.0, 4.0]".getBytes())))
+        new ByteArrayInputStream("[1.0, 2.0, 3.0, 4.0]".getBytes()), this.fType, null))
             .parsePointCoordinates(coordList);
   }
 
@@ -115,7 +111,7 @@ public class GeoJSONParserTest {
 
     double[] coords = (new GeoJSONParser(new ByteArrayInputStream(
         "[[102.0, 0.0, 100.0], [103.0, 1.0, 200.0], [104.0, 0.0, 300.0], [105.0, 1.0, 400.0]]"
-            .getBytes()))).parseCoordinateArray();
+            .getBytes()), this.fType, null)).parseCoordinateArray();
     double[] expCoords = { 102.0f, 0.0f, 103.0f, 1.0f, 104.0f, 0.0f, 105.0f,
         1.0f };
 
@@ -127,14 +123,14 @@ public class GeoJSONParserTest {
 
     double[] coords = (new GeoJSONParser(new ByteArrayInputStream(
         "[[102.0, 0.0], [103.0, 1.0], [104.0, 0.0 [104.5, 0.5]], [105.0, 1.0]]"
-            .getBytes()))).parseCoordinateArray();
+            .getBytes()), this.fType, null)).parseCoordinateArray();
   }
 
   @Test
   public void parseMultiPoint() throws Exception {
 
     List<double[]> coords = (new GeoJSONParser(new ByteArrayInputStream(
-        "[[10, 40], [40, 30], [20, 20], [30, 10]]".getBytes())))
+        "[[10, 40], [40, 30], [20, 20], [30, 10]]".getBytes()), this.fType, null))
             .parseMultiPointCoordinates();
     double[] expCoords1 = { 10.0f, 40.0f };
     double[] expCoords2 = { 40.0f, 30.0f };
@@ -152,7 +148,7 @@ public class GeoJSONParserTest {
 
     double[] coords = (new GeoJSONParser(new ByteArrayInputStream(
         "[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [105.0, 1.0]]"
-            .getBytes()))).parseLineStringCoordinates();
+            .getBytes()), this.fType, null)).parseLineStringCoordinates();
     double[] expCoords = { 100.0f, 0.0f, 101.0f, 0.0f, 101.0f, 1.0f, 100.0f,
         1.0f, 105.0f, 1.0f };
 
@@ -164,7 +160,7 @@ public class GeoJSONParserTest {
 
     List<double[]> lines = (new GeoJSONParser(new ByteArrayInputStream(
         "[[[10, 10], [20, 20], [10, 40]], [[40, 40], [30, 30], [40, 20], [30, 10]]]"
-            .getBytes()))).parseMultiLineStringCoordinates();
+            .getBytes()), this.fType, null)).parseMultiLineStringCoordinates();
     double[] expLine1 = { 10.0f, 10.0f, 20.0f, 20.0f, 10.0f, 40.0f };
     double[] expLine2 = { 40.0f, 40.0f, 30.0f, 30.0f, 40.0f, 20.0f, 30.0f,
         10.0f };
@@ -178,7 +174,7 @@ public class GeoJSONParserTest {
 
     List<double[]> rings = (new GeoJSONParser(new ByteArrayInputStream(
         "[[ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ]]"
-            .getBytes()))).parsePolygonCoordinates();
+            .getBytes()), this.fType, null)).parsePolygonCoordinates();
     double[] expCoords = { 100.0f, 0.0f, 101.0f, 0.0f, 101.0f, 1.0f, 100.0f,
         1.0f, 100.0f, 0.0f };
 
@@ -190,7 +186,7 @@ public class GeoJSONParserTest {
 
     List<double[]> rings = (new GeoJSONParser(new ByteArrayInputStream(
         "[ [[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]] ]"
-            .getBytes()))).parsePolygonCoordinates();
+            .getBytes()), this.fType, null)).parsePolygonCoordinates();
     double[] expRing1 = { 35.0f, 10.0f, 45.0f, 45.0f, 15.0f, 40.0f, 10.0f,
         20.0f, 35.0f, 10.0f };
     double[] expRing2 = { 20.0f, 30.0f, 35.0f, 35.0f, 30.0f, 20.0f, 20.0f,
@@ -205,7 +201,7 @@ public class GeoJSONParserTest {
 
     List<List<double[]>> polys = (new GeoJSONParser(new ByteArrayInputStream(
         "[[ [[30, 20], [45, 40], [10, 40], [30, 20]]], [[[15, 5], [40, 10], [10, 20], [5, 10], [15, 5]] ]]"
-            .getBytes()))).parseMultiPolygonCoordinates();
+            .getBytes()), this.fType, null)).parseMultiPolygonCoordinates();
     double[] expPoly1 = { 30.0f, 20.0f, 45.0f, 40.0f, 10.0f, 40.0f, 30.0f,
         20.0f };
     double[] expPoly2 = { 15.0f, 5.0f, 40.0f, 10.0f, 10.0f, 20.0f, 5.0f, 10.0f,
@@ -220,7 +216,7 @@ public class GeoJSONParserTest {
 
     List<List<double[]>> rings = (new GeoJSONParser(new ByteArrayInputStream(
         "[[[[40, 40], [20, 45], [45, 30], [40, 40]]],[[[20, 35], [10, 30], [10, 10], [30, 5], [45, 20], [20, 35]],[[30, 20], [20, 15], [20, 25], [30, 20]]]]"
-            .getBytes()))).parseMultiPolygonCoordinates();
+            .getBytes()), this.fType, null)).parseMultiPolygonCoordinates();
     double[] expRing1 = { 40.0f, 40.0f, 20.0f, 45.0f, 45.0f, 30.0f, 40.0f,
         40.0f };
     double[] expRing2 = { 20.0f, 35.0f, 10.0f, 30.0f, 10.0f, 10.0f, 30.0f, 5.0f,
@@ -237,7 +233,7 @@ public class GeoJSONParserTest {
   public void parseGeometryIncorrectGeometryType() throws Exception {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
-        "{\"type\": \"POINT\", \"coordinates\": [1.0, 2.0]}".getBytes())))
+        "{\"type\": \"POINT\", \"coordinates\": [1.0, 2.0]}".getBytes()), this.fType, null))
             .parseGeometry();
   }
 
@@ -245,7 +241,7 @@ public class GeoJSONParserTest {
   public void parseGeometryNull() throws Exception {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
-        "null".getBytes())))
+        "null".getBytes()), this.fType, null))
             .parseGeometry();
 
     assertTrue(geom.isEmpty());
@@ -255,7 +251,7 @@ public class GeoJSONParserTest {
   public void parseGeometryPoint() throws Exception {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
-        "{\"type\": \"Point\", \"coordinates\": [1.0, 2.0]}".getBytes())))
+        "{\"type\": \"Point\", \"coordinates\": [1.0, 2.0]}".getBytes()), this.fType, null))
             .parseGeometry();
 
     assertTrue(geom.getClass().getSimpleName().equals("Point"));
@@ -267,7 +263,7 @@ public class GeoJSONParserTest {
   public void parseGeometryPoint3D() throws Exception {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
-        "{\"type\": \"Point\", \"coordinates\": [1.0, 2.0, 3.0]}".getBytes())))
+        "{\"type\": \"Point\", \"coordinates\": [1.0, 2.0, 3.0]}".getBytes()), this.fType, null))
             .parseGeometry();
 
     assertTrue(geom.getClass().getSimpleName().equals("Point"));
@@ -280,7 +276,7 @@ public class GeoJSONParserTest {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
         "{\"type\": \"MultiPoint\",\"coordinates\": [[10, 40], [40, 30], [20, 20], [30, 10]]}"
-            .getBytes()))).parseGeometry();
+            .getBytes()), this.fType, null)).parseGeometry();
 
     assertTrue(geom.getClass().getSimpleName().equals("MultiPoint"));
     assertEquals(30.0f,
@@ -294,7 +290,7 @@ public class GeoJSONParserTest {
 
     Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
         "{ \"type\": \"LineString\", \"coordinates\": [[30, 10], [10, 30], [40, 40]]}"
-            .getBytes()))).parseGeometry();
+            .getBytes()), this.fType, null)).parseGeometry();
 
     assertTrue(geom.getClass().getSimpleName().equals("LineString"));
     assertEquals(22.6f, ((LineString) (geom)).getCentroid().getX(), 0.1f);
@@ -306,7 +302,7 @@ public class GeoJSONParserTest {
 
     Map<String, Object> properties = (new GeoJSONParser(
         new ByteArrayInputStream(
-            "{\"vstring\": \"value0\", {a:1}}".getBytes()))).parseProperties();
+            "{\"vstring\": \"value0\", {a:1}}".getBytes()), this.fType, null)).parseProperties();
 
     assertEquals("value0", properties.get("vstring"));
     assertEquals(12, properties.get("vint"));
@@ -318,7 +314,7 @@ public class GeoJSONParserTest {
     Map<String, Object> properties = (new GeoJSONParser(
         new ByteArrayInputStream(
             "null"
-                .getBytes()))).parseProperties();
+                .getBytes()), this.fType, null)).parseProperties();
 
     assertEquals(0, properties.size());
   }
@@ -329,7 +325,7 @@ public class GeoJSONParserTest {
     Map<String, Object> properties = (new GeoJSONParser(
         new ByteArrayInputStream(
             "{\"vstring\": \"value0\", \"vint\": 12, \"vboolean\": true}"
-                .getBytes()))).parseProperties();
+                .getBytes()), this.fType, null)).parseProperties();
 
     assertEquals("value0", properties.get("vstring"));
     assertEquals(12.0, properties.get("vint"));
@@ -342,7 +338,7 @@ public class GeoJSONParserTest {
     SimpleFeature feat = (new GeoJSONParser(
         new ByteArrayInputStream(
             "{\"type\":\"Feature\", \"geometry\": {\"type\": \"Point\", \"coordinates\": [1.0, 2.0]}, \"properties\":{\"vstring\": \"value0\", \"vint\": 12, \"vboolean\": true}}"
-                .getBytes()))).parseFeature(this.fType);
+                .getBytes()), this.fType, null)).parseFeature();
 
     assertEquals(1.0f, ((Point)(feat.getDefaultGeometry())).getX(), 0.1f);
     assertEquals(2.0f, ((Point)(feat.getDefaultGeometry())).getY(), 0.1f);
@@ -357,7 +353,7 @@ public class GeoJSONParserTest {
     SimpleFeature feat = (new GeoJSONParser(
         new ByteArrayInputStream(
             "{\"type\":\"Feature\", \"geometry\": {\"type\": \"Point\", \"coordinates\": [1.0, 2.0]}, \"properties\":null}"
-                .getBytes()))).parseFeature(this.fType);
+                .getBytes()), this.fType, null)).parseFeature();
     assertEquals(1.0f, ((Point)(feat.getDefaultGeometry())).getX(), 0.1f);
     assertEquals(2.0f, ((Point)(feat.getDefaultGeometry())).getY(), 0.1f);
   }
@@ -368,7 +364,45 @@ public class GeoJSONParserTest {
     SimpleFeature feat = (new GeoJSONParser(
         new ByteArrayInputStream(
             "{\"type\":\"Feature\", \"geometry\": null, \"properties\":null}"
-                .getBytes()))).parseFeature(this.fType);
+                .getBytes()), this.fType, null)).parseFeature();
     assertTrue(true);
+  }
+
+  @Test(expected = NoSuchElementException.class)
+  public void parseEmptyFeatureCollection() throws Exception {
+
+    this.json = ArcGISRestDataStoreFactoryTest
+        .readJSON("test-data/noFeatures.geo.json");
+    
+    GeoJSONParser parser= (new GeoJSONParser(
+        new ByteArrayInputStream(this.json.getBytes()), this.fType, null));
+    parser.parseFeatureCollection();
+    parser.next();
+  }
+
+  @Test
+  public void parseMalformedFeatureCollection() throws Exception {
+
+    this.json = ArcGISRestDataStoreFactoryTest
+        .readJSON("test-data/malformed.geo.json");
+    
+    GeoJSONParser parser= (new GeoJSONParser(
+        new ByteArrayInputStream(this.json.getBytes()), this.fType, null));
+    parser.parseFeatureCollection();
+    assertTrue(parser.hasNext());
+    assertNotNull(parser.next());
+    assertFalse(parser.hasNext());
+    parser.close();
+  }
+
+  @Test(expected = IOException.class)
+  public void parseError() throws Exception {
+
+    this.json = ArcGISRestDataStoreFactoryTest
+        .readJSON("test-data/error.json");
+    
+    GeoJSONParser parser= (new GeoJSONParser(
+        new ByteArrayInputStream(this.json.getBytes()), this.fType, null));
+    parser.parseFeatureCollection();
   }
 }

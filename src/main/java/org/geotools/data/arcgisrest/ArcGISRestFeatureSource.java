@@ -90,8 +90,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
   }
 
   protected ArcGISRestDataStore dataStore;
-  // protected Webservice ws;
-  // protected SimpleFeatureType featType;
   protected DefaultResourceInfo resInfo;
   protected String objectIdField;
 

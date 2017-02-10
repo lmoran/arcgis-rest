@@ -56,12 +56,13 @@ public class ArcGISRestFeatureReaderTest {
 
     this.fType = builder.buildFeatureType();
   }
-/*
+
   @Test(expected = IOException.class)
   public void emptyInputStreamHasNext() throws Exception {
 
     this.reader = new ArcGISRestFeatureReader(this.fType,
         new ByteArrayInputStream("".getBytes()), this.LOGGER);
+    assertFalse(this.reader.hasNext());
   }
 
   @Test
@@ -89,7 +90,6 @@ public class ArcGISRestFeatureReaderTest {
   @Test
   public void noProperties() throws Exception {
 
-
     this.json = ArcGISRestDataStoreFactoryTest
         .readJSON("test-data/noProperties.geo.json");
     this.reader = new ArcGISRestFeatureReader(this.fType,
@@ -97,8 +97,12 @@ public class ArcGISRestFeatureReaderTest {
 
     assertTrue(this.reader.hasNext());
     SimpleFeature feat = this.reader.next();
+    assertTrue(this.reader.hasNext());
+    feat = this.reader.next();
+    assertTrue(this.reader.hasNext());
+    feat = this.reader.next();
+    assertFalse(this.reader.hasNext());
     assertEquals("geometry",
         feat.getDefaultGeometryProperty().getName().getLocalPart());
   }
-  */
 }

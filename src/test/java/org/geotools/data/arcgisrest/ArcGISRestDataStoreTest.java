@@ -108,7 +108,6 @@ public class ArcGISRestDataStoreTest {
   public void tearDown() throws Exception {
   }
 
-  @Ignore 
   @Test
   public void testHTTPError() throws Exception {
 
@@ -124,8 +123,6 @@ public class ArcGISRestDataStoreTest {
     when(catalogClientMock.executeMethod(catalogMock))
         .thenReturn(HttpStatus.SC_NOT_FOUND);
 
-    when(catalogMock.getResponseBodyAsString()).thenReturn(null);
-
     try {
       this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
           .createDefaultTestDataStore();
@@ -136,7 +133,6 @@ public class ArcGISRestDataStoreTest {
 
   }
 
-  @Ignore 
   @Test
   public void testServiceError() throws Exception {
 
