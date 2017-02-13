@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,8 @@ import com.vividsolutions.jts.geom.Polygon;
 
 import com.google.gson.JsonSyntaxException;
 
+import org.geotools.data.arcgisrest.schema.catalog.Error_;
+
 /**
  * GeoJSON parsing of simple ,mbi-dimensional features using a streaming parser
  * 
@@ -62,6 +65,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
   /**
    * GeoJSON format constants
    */
+  static public final String ENCODING = "UTF-8";
   static public final String ERROR = "error";
   static public final String ERROR_CODE = "code";
   static public final String ERROR_MESSAGE = "message";
@@ -106,11 +110,11 @@ public class GeoJSONParser implements SimpleFeatureIterator {
   /**
    * Class holding ArcGIS ReST API error
    */
-  private class Error {
-    public int code;
-    public String message;
-    public String details;
-  }
+  // private class Error {
+  // public int code;
+  // public String message;
+  // public String details;
+  // }
 
   /**
    * Constructor
@@ -125,7 +129,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
    */
   public GeoJSONParser(InputStream iStream, SimpleFeatureType featureTypeIn,
       Logger loggerIn) throws UnsupportedEncodingException {
-    this.reader = new JsonReader(new InputStreamReader(iStream, "UTF-8")); // FIXME:
+    this.reader = new JsonReader(new InputStreamReader(iStream, ENCODING)); 
     LOGGER = loggerIn;
     this.featureType = featureTypeIn;
   }
@@ -212,7 +216,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       case CRS:
         this.reader.beginObject();
         while (this.reader.hasNext()) {
-          // TODO:
+          // TODO: this should be checked against the CRS of the feature type 
           this.reader.skipValue();
         }
         this.reader.endObject();
@@ -225,6 +229,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       case FEATURES:
         this.reader.beginArray();
         this.inFeatureCollection = true;
+
         // If there is the features array to read, we can leave this method
         return;
 
@@ -268,7 +273,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       coords.add(this.reader.nextDouble());
       coords.add(this.reader.nextDouble());
 
-      // FIXME: Discards Z
+      // TODO: for the time being it discards Z
       if (this.reader.peek() == JsonToken.NUMBER) {
         this.reader.skipValue();
       }
@@ -301,7 +306,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
     return GeoJSONParser.listToArray(coords);
   }
 
-  /**
+  /** 
    * Parses a Point GeoJSON coordinates array and returns them in an array
    * 
    * @return array with coordinates
@@ -622,10 +627,11 @@ public class GeoJSONParser implements SimpleFeatureIterator {
    * Parses an ArcGIS ReST API error message
    * 
    * @return the exception reflecting the error
+   * @throws IOException 
    */
-  public IOException parseError() {
+  public IOException parseError() throws IOException {
 
-    GeoJSONParser.Error err = new GeoJSONParser.Error();
+    Error_ err = new Error_();
 
     try {
       this.reader.beginObject();
@@ -635,22 +641,21 @@ public class GeoJSONParser implements SimpleFeatureIterator {
         switch (this.reader.nextName()) {
 
         case ERROR_CODE:
-          err.code = this.reader.nextInt();
+          err.setCode(this.reader.nextInt());
           break;
 
         case ERROR_MESSAGE:
-          err.message = this.reader.nextString();
+          err.setMessage(this.reader.nextString());
           break;
 
         case ERROR_DETAILS:
-          StringBuffer sb = new StringBuffer();
+          List<String> details = new ArrayList<String>();
           this.reader.beginArray();
           while (this.reader.hasNext()) {
-            sb.append(this.reader.nextString());
-            sb.append(" ");
+            details.add(this.reader.nextString());
           }
           this.reader.endArray();
-          err.details = sb.toString();
+          err.setDetails(details);
         }
       }
 
@@ -660,8 +665,9 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       throw (new NoSuchElementException(e.getMessage()));
     }
 
-    return new IOException("ArcGIS ReST API Error: " + err.code + " "
-        + err.message + " " + err.details);
+    this.close();
+    return new IOException("ArcGIS ReST API Error: " + err.getCode() + " "
+        + err.getMessage() + " " + String.join(",", err.getDetails()));
   }
 
   /**

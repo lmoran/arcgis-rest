@@ -133,6 +133,7 @@ public class ArcGISRestDataStoreTest {
 
   }
 
+  @Ignore
   @Test
   public void testServiceError() throws Exception {
 

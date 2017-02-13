@@ -21,6 +21,7 @@ package org.geotools.data.arcgisrest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geotools.data.FeatureReader;
