@@ -80,7 +80,7 @@ public class ArcGISRestDataStoreFactoryTest {
    * @return JSON content of the file
    * @throws FileNotFoundException
    */
-  public static String readJSON(String fileName) throws FileNotFoundException {
+  public static String readJSONAsString(String fileName) throws FileNotFoundException {
     Scanner input = new Scanner(new File(
         ArcGISRestDataStoreFactoryTest.class.getResource(fileName).getFile()));
     StringBuilder jsonObj = new StringBuilder();
@@ -88,6 +88,19 @@ public class ArcGISRestDataStoreFactoryTest {
       jsonObj.append(input.nextLine());
     }
     return jsonObj.toString();
+  }
+
+  /**
+   * Helper method to read a JSON file into an InputString
+   * 
+   * @param fileName
+   *          File name to load
+   * @return JSON content of the file
+   * @throws FileNotFoundException
+   */
+  public static InputStream readJSONAsStream(String fileName) throws FileNotFoundException {
+    return new FileInputStream(new File(
+        ArcGISRestDataStoreFactoryTest.class.getResource(fileName).getFile()));
   }
 
   /**

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.geotools.data.DataStore;
 import org.geotools.data.Query;
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
@@ -37,6 +38,7 @@ import org.geotools.data.arcgisrest.schema.catalog.Error_;
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import org.geotools.feature.NameImpl;
 import org.apache.commons.httpclient.Header;
@@ -123,8 +125,18 @@ public class ArcGISRestDataStore extends ContentDataStore {
     try {
       response = ArcGISRestDataStore.InputStreamToString(
           this.retrieveJSON("GET", apiUrl, DEFAULT_PARAMS));
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Error during retrieval of service '" + apiUrl
+          + "' " + e.getMessage(), e);
+      throw (e);
+    }
+
+    try {
       this.catalog = (new Gson()).fromJson(response, Catalog.class);
-    } catch (JsonSyntaxException | IOException e) {
+      if (this.catalog == null) {
+        throw (new JsonSyntaxException("Malformed JSON"));
+      }
+    } catch (JsonSyntaxException e) {
       // Checks whether we have an AercGIS error message
       err = (new Gson()).fromJson(response, Error_.class);
       LOGGER.log(Level.SEVERE,
@@ -144,14 +156,25 @@ public class ArcGISRestDataStore extends ContentDataStore {
           responseWSString = ArcGISRestDataStore.InputStreamToString(
               this.retrieveJSON("GET", new URL(ds.getWebService().toString()),
                   ArcGISRestDataStore.DEFAULT_PARAMS));
+        } catch (IOException e) {
+          LOGGER.log(Level.SEVERE, "Error during retrieval of dataset '"
+              + ds.getWebService() + "' " + e.getMessage(), e);
+          return;
+        }
+
+        try {
           ws = (new Gson()).fromJson(responseWSString, Webservice.class);
-        } catch (JsonSyntaxException | IOException e) {
+          if (ws == null) {
+            throw (new JsonSyntaxException("Malformed JSON"));
+          }
+        } catch (JsonSyntaxException e) {
           // Checks whether we have an ArcGIS error message
           Error_ errWS = (new Gson()).fromJson(responseWSString, Error_.class);
           LOGGER.log(Level.SEVERE,
               "Error during retrieval of dataset " + ds.getWebService() + " "
                   + errWS.getCode() + " " + errWS.getMessage(),
               e);
+          return;
         }
 
         Name dsName = new NameImpl(namespace, ws.getName());
@@ -234,7 +257,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
       Map<String, Object> params) throws IOException {
 
     HttpClient client = new HttpClient();
-    
+
     // Instanties the method based on the methType parameter
     HttpMethodBase meth;
     if (methType.equals("GET")) {
@@ -243,13 +266,14 @@ public class ArcGISRestDataStore extends ContentDataStore {
       meth = new PostMethod();
     }
 
-    // Sets the URI, request parameters and request body (depending on mthod type) 
+    // Sets the URI, request parameters and request body (depending on method
+    // type)
     URI uri = new URI(url.toString(), false);
     NameValuePair[] kvps = new NameValuePair[params.size()];
     int i = 0;
     for (Object entry : params.entrySet().toArray()) {
       kvps[i++] = new NameValuePair(((Map.Entry) entry).getKey().toString(),
-         ((Map.Entry) entry).getValue().toString());
+          ((Map.Entry) entry).getValue().toString());
     }
 
     if (methType.equals("GET")) {
@@ -276,7 +300,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
       // If HTTP error, throws an exception
       if (status != HttpStatus.SC_OK) {
-        throw new IOException("HTTP Error: " + status + " URL");
+        throw new IOException("HTTP Status: " + status + " for URL: " + uri);
       }
 
       // Retrieve the wait period is returned by the server

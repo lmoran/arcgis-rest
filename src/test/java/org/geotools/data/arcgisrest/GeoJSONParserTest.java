@@ -372,7 +372,7 @@ public class GeoJSONParserTest {
   public void parseEmptyFeatureCollection() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/noFeatures.geo.json");
+        .readJSONAsString("test-data/noFeatures.geo.json");
     
     GeoJSONParser parser= (new GeoJSONParser(
         new ByteArrayInputStream(this.json.getBytes()), this.fType, null));
@@ -384,7 +384,7 @@ public class GeoJSONParserTest {
   public void parseMalformedFeatureCollection() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/malformed.geo.json");
+        .readJSONAsString("test-data/malformed.geo.json");
     
     GeoJSONParser parser= (new GeoJSONParser(
         new ByteArrayInputStream(this.json.getBytes()), this.fType, null));
@@ -399,7 +399,7 @@ public class GeoJSONParserTest {
   public void parseError() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/error.json");
+        .readJSONAsString("test-data/error.json");
     
     GeoJSONParser parser= (new GeoJSONParser(
         new ByteArrayInputStream(this.json.getBytes()), this.fType, null));

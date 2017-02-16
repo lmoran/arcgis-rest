@@ -98,7 +98,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       throws IOException {
 
     super(entry, query);
-
     this.dataStore = (ArcGISRestDataStore) entry.getDataStore();
   }
 
@@ -185,6 +184,14 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   @Override
   public ResourceInfo getInfo() {
+    if (this.resInfo == null) {
+      try {
+        this.buildFeatureType();
+      } catch (IOException e) {
+        this.getDataStore().getLogger().log(Level.SEVERE, e.getMessage(), e);
+        return null;
+      }
+    }
     return this.resInfo;
   }
 
@@ -198,14 +205,11 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     return this.entry.getName();
   }
 
-  // FIXME: it shuold return the bounds of the query, if not null
+  // TODO: it shuold return the bounds of the query, if not null
   @Override
   protected ReferencedEnvelope getBoundsInternal(Query arg0)
       throws IOException {
-    if (this.resInfo == null) {
-      this.buildFeatureType();
-    }
-    return this.resInfo.getBounds();
+    return this.getInfo().getBounds();
   }
 
   @Override
@@ -241,7 +245,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         ArcGISRestDataStore.DEFAULT_PARAMS);
     InputStream result;
 
-    // TODO: use stream to receive the JSON back from ArcGIS
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 
@@ -265,14 +268,15 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       // (for other requests that's accettavle, but for the actual query)
       result = this.dataStore.retrieveJSON("POST",
           (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
-          params); // XXX
+          params);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
     }
 
     // Returns a reader for the result
-    return new ArcGISRestFeatureReader(this.schema, result, this.dataStore.getLogger());
+    return new ArcGISRestFeatureReader(this.schema, result,
+        this.dataStore.getLogger());
   }
 
   /**

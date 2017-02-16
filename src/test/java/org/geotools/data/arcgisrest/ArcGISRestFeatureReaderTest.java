@@ -69,7 +69,7 @@ public class ArcGISRestFeatureReaderTest {
   public void noFeaturesHasNext() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/noFeatures.geo.json");
+        .readJSONAsString("test-data/noFeatures.geo.json");
     this.reader = new ArcGISRestFeatureReader(this.fType,
         new ByteArrayInputStream(json.getBytes()), this.LOGGER);
 
@@ -80,7 +80,7 @@ public class ArcGISRestFeatureReaderTest {
   public void noFeaturesNext() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/noFeatures.geo.json");
+        .readJSONAsString("test-data/noFeatures.geo.json");
     this.reader = new ArcGISRestFeatureReader(this.fType,
         new ByteArrayInputStream(json.getBytes()), this.LOGGER);
 
@@ -91,7 +91,7 @@ public class ArcGISRestFeatureReaderTest {
   public void noProperties() throws Exception {
 
     this.json = ArcGISRestDataStoreFactoryTest
-        .readJSON("test-data/noProperties.geo.json");
+        .readJSONAsString("test-data/noProperties.geo.json");
     this.reader = new ArcGISRestFeatureReader(this.fType,
         new ByteArrayInputStream(json.getBytes()), this.LOGGER);
 
