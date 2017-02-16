@@ -123,8 +123,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       this.resInfo
           .setSchema(new URI(this.dataStore.getNamespace().toExternalForm()));
     } catch (URISyntaxException e) {
-      // FIXME: this not nice either
-      throw new IOException(e.getMessage());
+      // Re-packages the exception to be compatible with method signature
+      throw new IOException(e.getMessage(), e.fillInStackTrace());
     }
     try {
       this.resInfo.setCRS(CRS.decode(
@@ -139,6 +139,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     // set
     this.resInfo.setKeywords(new HashSet(ds.getKeyword()));
 
+    // FIXME: the abstract of the feature type is not set
+    this.resInfo.setDescription(ds.getDescription());
+    
     this.resInfo.setTitle(ds.getTitle());
     this.resInfo.setName(ws.getName());
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
@@ -151,11 +154,12 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // Builds the feature type
     SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-    builder.setCRS(this.resInfo.getCRS()); // NOTE: this has ot be deon before
+    builder.setCRS(this.resInfo.getCRS()); // NOTE: this has ot be done before
                                            // other settings, lest the SRS is
                                            // not set
     builder.setName(this.entry.getName());
-    builder.setDescription(new SimpleInternationalString(ds.getDescription())); // XXX
+    // FIXME: the abstract of the feature type is not set
+    builder.setDescription(new SimpleInternationalString(ds.getDescription()));
 
     // Adds non-geometry field descriptions
     ws.getFields().forEach((fld) -> {
@@ -224,10 +228,9 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     try {
       // FIXME: the URL building is rather awkward
-      cnt = (new Gson()).fromJson(ArcGISRestDataStore
-          .InputStreamToString(this.dataStore.retrieveJSON("POST",
-              (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
-              params)),
+      cnt = (new Gson()).fromJson(
+          ArcGISRestDataStore.InputStreamToString(this.dataStore
+              .retrieveJSON("POST", (new URL(this.composeQueryURL())), params)),
           Count.class);
     } catch (HTTPException e) {
       throw new IOException(
@@ -262,13 +265,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // Executes the request
     try {
-      // FIXME: the URL building is rather awkward
-      // FIXME: try with GeoJSON to make it faster
-      // FIXME: try streaming to make it use less memory-hungry
-      // (for other requests that's accettavle, but for the actual query)
       result = this.dataStore.retrieveJSON("POST",
-          (new URL(this.schema.getUserData().get("serviceUrl") + "/query")),
-          params);
+          (new URL(this.composeQueryURL())), params);
     } catch (HTTPException e) {
       throw new IOException(
           "Error " + e.getStatusCode() + " " + e.getMessage());
@@ -347,6 +345,15 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     }
 
     return joiner.toString();
+  }
+
+  /**
+   * Compose the query URL of the instance's dataset
+   * 
+   * @return query URL
+   */
+  protected String composeQueryURL() {
+    return this.schema.getUserData().get("serviceUrl") + "/query";
   }
 
 }
