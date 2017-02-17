@@ -138,6 +138,8 @@
             <include>/catalog/*.json</include>
             <include>/query/*.json</include>
             <include>/webservice/*.json</include>
+            <include>/services/*.json</include>
+            <include>/services/**/*.json</include>
           </includes>
         </configuration>
         <executions>

@@ -51,6 +51,7 @@ public class ArcGISRestDataStoreFactoryTest {
 
   public static String URL = "http://data.dhs.opendata.arcgis.com/data.json";
   public static String WSURL = "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0";
+  public static String URL_ARCGISSERVER = "http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services";
   public static String QUERYURL = WSURL + "/query";
   public static String NAMESPACE = "http://aurin.org.au";
   public static String USER = "testuser";
@@ -80,7 +81,8 @@ public class ArcGISRestDataStoreFactoryTest {
    * @return JSON content of the file
    * @throws FileNotFoundException
    */
-  public static String readJSONAsString(String fileName) throws FileNotFoundException {
+  public static String readJSONAsString(String fileName)
+      throws FileNotFoundException {
     Scanner input = new Scanner(new File(
         ArcGISRestDataStoreFactoryTest.class.getResource(fileName).getFile()));
     StringBuilder jsonObj = new StringBuilder();
@@ -98,22 +100,39 @@ public class ArcGISRestDataStoreFactoryTest {
    * @return JSON content of the file
    * @throws FileNotFoundException
    */
-  public static InputStream readJSONAsStream(String fileName) throws FileNotFoundException {
+  public static InputStream readJSONAsStream(String fileName)
+      throws FileNotFoundException {
     return new FileInputStream(new File(
         ArcGISRestDataStoreFactoryTest.class.getResource(fileName).getFile()));
   }
 
   /**
-   * Helper method to create a default test data store
+   * Helper method to create a default test data store with Open Data catlaog
    */
-  public static DataStore createDefaultTestDataStore() throws IOException {
+  public static DataStore createDefaultArcGISServerTestDataStore()
+      throws IOException {
+
+    Map<String, Serializable> params = new HashMap<String, Serializable>();
+    params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, NAMESPACE);
+    params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL_ARCGISSERVER);
+    params.put(ArcGISRestDataStoreFactory.ISOPENDATA_PARAM.key, false);
+    params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);
+    params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, PASSWORD);
+    return (new ArcGISRestDataStoreFactory()).createDataStore(params);
+  }
+
+  /**
+   * Helper method to create a default test data store on ArcGIS Server
+   */
+  public static DataStore createDefaultOpenDataTestDataStore()
+      throws IOException {
 
     Map<String, Serializable> params = new HashMap<String, Serializable>();
     params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, NAMESPACE);
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL);
+    params.put(ArcGISRestDataStoreFactory.ISOPENDATA_PARAM.key, true);
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);
     params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, PASSWORD);
-
     return (new ArcGISRestDataStoreFactory()).createDataStore(params);
   }
 
@@ -128,10 +147,12 @@ public class ArcGISRestDataStoreFactoryTest {
    * @throws IOException
    */
   public DataStore createDataStore(final String namespace, final String url,
-      final String user, final String password) throws IOException {
+      boolean flag, final String user, final String password)
+      throws IOException {
 
     params.put(ArcGISRestDataStoreFactory.NAMESPACE_PARAM.key, namespace);
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, url);
+    params.put(ArcGISRestDataStoreFactory.ISOPENDATA_PARAM.key, flag);
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, user);
     params.put(ArcGISRestDataStoreFactory.PASSWORD_PARAM.key, password);
     return (new ArcGISRestDataStoreFactory()).createDataStore(params);
@@ -159,6 +180,10 @@ public class ArcGISRestDataStoreFactoryTest {
     params.put(ArcGISRestDataStoreFactory.URL_PARAM.key, URL);
     assertTrue(dsf.canProcess(params));
 
+    // Open data flag set correrctly
+    params.put(ArcGISRestDataStoreFactory.ISOPENDATA_PARAM.key, true);
+    assertTrue(dsf.canProcess(params));
+
     // Username set
     params.put(ArcGISRestDataStoreFactory.USER_PARAM.key, USER);
     assertTrue(dsf.canProcess(params));
@@ -171,14 +196,14 @@ public class ArcGISRestDataStoreFactoryTest {
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedNamespace() throws IOException {
     LOGGER.setLevel(Level.OFF);
-    createDataStore("aaa", "bbb", "ccc", "ddd");
+    createDataStore("aaa", "bbb", true, "ccc", "ddd");
     LOGGER.setLevel(Level.FINEST);
   }
 
   @Test(expected = MalformedURLException.class)
   public void testCreateDataStoreMalformedURL() throws IOException {
     LOGGER.setLevel(Level.OFF);
-    createDataStore(NAMESPACE, "bbb", "ccc", "ddd");
+    createDataStore(NAMESPACE, "bbb", true, "ccc", "ddd");
     LOGGER.setLevel(Level.FINEST);
   }
 

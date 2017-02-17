@@ -29,16 +29,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.geotools.data.DataStore;
 import org.geotools.data.Query;
+
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.arcgisrest.schema.catalog.Error_;
+import org.geotools.data.arcgisrest.schema.services.Services;
+import org.geotools.data.arcgisrest.schema.services.feature.Featureserver;
+
 import org.geotools.data.store.ContentDataStore;
 import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import org.geotools.feature.NameImpl;
 import org.apache.commons.httpclient.Header;
@@ -79,6 +81,9 @@ public class ArcGISRestDataStore extends ContentDataStore {
     DEFAULT_PARAMS.put(GEOMETRYTYPE_PARAM, "esriGeometryEnvelope");
   }
 
+  // ArcGIS Server parameters
+  public static String FEATURESERVER_SERVICE = "FeatureServer";
+
   // Cache of feature sources
   protected Map<Name, ArcGISRestFeatureSource> featureSources = new HashMap<Name, ArcGISRestFeatureSource>();
 
@@ -91,13 +96,14 @@ public class ArcGISRestDataStore extends ContentDataStore {
   // API endpoints proper, which is different from teh ArcGIS ReST API
   protected URL namespace;
   protected URL apiUrl;
+  protected boolean opendataFlag = false;
   protected String user;
   protected String password;
   protected Catalog catalog;
   protected Map<Name, Dataset> datasets = new HashMap<Name, Dataset>();
 
-  public ArcGISRestDataStore(String namespace, String apiEndpoint, String user,
-      String password)
+  public ArcGISRestDataStore(String namespace, String apiEndpoint,
+      boolean opendataFlagIn, String user, String password)
       throws MalformedURLException, JsonSyntaxException, IOException {
 
     super();
@@ -118,6 +124,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
     }
     this.user = user;
     this.password = password;
+    this.opendataFlag = opendataFlagIn;
 
     // Retrieves the catalog JSON document
     String response = null;
@@ -132,11 +139,72 @@ public class ArcGISRestDataStore extends ContentDataStore {
     }
 
     try {
-      this.catalog = (new Gson()).fromJson(response, Catalog.class);
-      if (this.catalog == null) {
-        throw (new JsonSyntaxException("Malformed JSON"));
+      // Gets the catalog of web services in either the Open Data catalog, or
+      // the ArcGIS Server list of services
+
+      // If this is the Open Data catalog, it loads it
+      if (this.opendataFlag == true) {
+        this.catalog = (new Gson()).fromJson(response, Catalog.class);
+        if (this.catalog == null) {
+          throw (new JsonSyntaxException("Malformed JSON"));
+        }
+
+        // It it is an ArcGIS Server, cycles through the services list to
+        // retrieve the web services URL of the FeautreServers
+      } else {
+        this.catalog = new Catalog();
+        Services services = (new Gson()).fromJson(response, Services.class);
+        if (services == null) {
+          throw (new JsonSyntaxException("Malformed JSON"));
+        }
+
+        services.getServices().forEach(srv -> {
+          if (srv.getType().equals(FEATURESERVER_SERVICE)) {
+
+            Featureserver featureServer = null;
+            String featureServerString = null;
+            URL featureServerURL = null;
+            try {
+              // XXX
+              String s = srv.getName().indexOf("/") > -1
+                  ? srv.getName().split("/")[1] : srv.getName();
+              featureServerURL = new URL(srv.getUrl() != null ? srv.getUrl()
+                  : apiUrl + "/" + s + "/" + FEATURESERVER_SERVICE);
+              featureServerString = ArcGISRestDataStore.InputStreamToString(
+                  this.retrieveJSON("GET", featureServerURL, DEFAULT_PARAMS));
+              featureServer = (new Gson()).fromJson(featureServerString,
+                  Featureserver.class);
+
+              if (featureServerURL == null) {
+                throw (new JsonSyntaxException("Malformed JSON"));
+              }
+            } catch (JsonSyntaxException e) {
+              // Checks whether we have an ArcGIS error message
+              Error_ errWS = (new Gson()).fromJson(featureServerString,
+                  Error_.class);
+              LOGGER.log(Level.SEVERE,
+                  "Error during retrieval of feature server " + errWS.getCode()
+                      + " " + errWS.getMessage(),
+                  e);
+              return;
+            } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }
+
+            String featureServerURLString = featureServerURL.toString();
+            featureServer.getLayers().forEach(layer -> {
+              Dataset ds = new Dataset();
+              ds.setWebService(featureServerURLString + "/" + layer.getId());
+              this.catalog.getDataset().add(ds);
+            });
+          }
+        });
+
       }
-    } catch (JsonSyntaxException e) {
+    } catch (
+
+    JsonSyntaxException e) {
       // Checks whether we have an AercGIS error message
       err = (new Gson()).fromJson(response, Error_.class);
       LOGGER.log(Level.SEVERE,
@@ -279,9 +347,12 @@ public class ArcGISRestDataStore extends ContentDataStore {
     if (methType.equals("GET")) {
       meth.setQueryString(kvps);
       uri.setQuery(meth.getQueryString());
+      this.LOGGER.log(Level.FINER,
+          "About to query GET " + url.toString() + "?" + meth.getQueryString());
     } else {
       ((PostMethod) (meth)).setContentChunked(true);
       ((PostMethod) (meth)).setRequestBody(kvps);
+      this.LOGGER.log(Level.FINER, "About to query POST " + url.toString());
     }
 
     meth.setURI(uri);
@@ -300,7 +371,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
       // If HTTP error, throws an exception
       if (status != HttpStatus.SC_OK) {
-        throw new IOException("HTTP Status: " + status + " for URL: " + uri);
+        throw new IOException("HTTP Status: " + status + " for URL: " + uri + " response: " + meth.getResponseBodyAsString());
       }
 
       // Retrieve the wait period is returned by the server

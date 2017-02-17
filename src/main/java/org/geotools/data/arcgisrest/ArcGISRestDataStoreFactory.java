@@ -50,7 +50,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   public static final Param NAMESPACE_PARAM = new Param("namespace",
       String.class, "namespace associated to this data store", true);
   public static final Param URL_PARAM = new Param("API URL", String.class,
-      "endpoint of the ArcGSI ReST API", true);
+      "endpoint of the ArcGSI ReST API (either the data.json of an OpenData catalog, or the folder of an ArcGIS Server API", true);
   public static final Param USER_PARAM = new Param("User", String.class,
       new SimpleInternationalString("the username of the endpoint"), false,
       null);
@@ -66,7 +66,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   static {
     paramMetadata.add(NAMESPACE_PARAM);
-    paramMetadata.add(URL_PARAM);
+    paramMetadata.add(URL_PARAM);            
     paramMetadata.add(ISOPENDATA_PARAM);
     paramMetadata.add(USER_PARAM);
     paramMetadata.add(PASSWORD_PARAM);
@@ -82,7 +82,9 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   public DataStore createDataStore(Map<String, Serializable> params)
       throws IOException {
     return new ArcGISRestDataStore((String) params.get(NAMESPACE_PARAM.key),
-        (String) params.get(URL_PARAM.key), (String) params.get(USER_PARAM.key),
+        (String) params.get(URL_PARAM.key),
+        Boolean.parseBoolean(params.get(ISOPENDATA_PARAM.key).toString()),
+        (String) params.get(USER_PARAM.key),
         (String) params.get(PASSWORD_PARAM.key));
   }
 

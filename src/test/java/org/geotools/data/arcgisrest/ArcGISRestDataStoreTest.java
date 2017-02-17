@@ -59,9 +59,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 public class ArcGISRestDataStoreTest {
 
   public static String TYPENAME1 = "LGAProfiles2014Beta";
-  // public static String TYPENAME2 = "5f96a56cf8024d24b825b6aad94031e4";
-  // public static String TYPENAME3 = "5000b3c446ed419eb590baa3832eb8f7";
-  // public static String TYPENAME4 = "940854a3f46345f5af7d5c61abce6ec2";
+  public static String TYPENAME2 = "Airports_2";
+  public static String TYPENAME3 = "Airports_3";
+  public static String TYPENAME4 = "affordable_housing"; 
 
   private ArcGISRestDataStore dataStore;
 
@@ -89,7 +89,7 @@ public class ArcGISRestDataStoreTest {
 
     try {
       this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-          .createDefaultTestDataStore();
+          .createDefaultOpenDataTestDataStore();
       List<Name> names = this.dataStore.createTypeNames();
     } catch (IOException e) {
       assertTrue(e.getMessage().contains("404"));
@@ -116,7 +116,7 @@ public class ArcGISRestDataStoreTest {
 
     try {
       this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-          .createDefaultTestDataStore();
+          .createDefaultOpenDataTestDataStore();
       List<Name> names = this.dataStore.createTypeNames();
     } catch (IOException e) {
       assertTrue(e.getMessage().contains("400 Cannot perform query"));
@@ -125,7 +125,7 @@ public class ArcGISRestDataStoreTest {
   }
 
   @Test
-  public void testCreateTypeNames() throws Exception {
+  public void testCreateTypeNamesFromArcGISOnline() throws Exception {
 
     this.clientMock = PowerMockito.mock(HttpClient.class);
     PowerMockito.whenNew(HttpClient.class).withNoArguments()
@@ -142,7 +142,7 @@ public class ArcGISRestDataStoreTest {
             .readJSONAsStream("test-data/lgaDataset.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-        .createDefaultTestDataStore();
+        .createDefaultOpenDataTestDataStore();
     List<Name> names = this.dataStore.createTypeNames();
 
     assertEquals(1, names.size());
@@ -152,6 +152,48 @@ public class ArcGISRestDataStoreTest {
 
     assertNotNull(this.dataStore.getEntry(
         new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME1)));
+  }
+
+  @Test
+  public void testCreateTypeNamesFromArcGISServer() throws Exception {
+
+    this.clientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(clientMock).thenReturn(clientMock);
+    this.getMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class).withNoArguments().thenReturn(getMock)
+        .thenReturn(getMock);
+    when(clientMock.executeMethod(getMock)).thenReturn(HttpStatus.SC_OK)
+        .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK)
+        .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK)
+        .thenReturn(HttpStatus.SC_OK);
+    when(getMock.getResponseBodyAsStream())
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/services.json"))
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/FeatureServerAirport.json"))
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/FeatureServerAffordableHousing.json"))
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/airport2Dataset.json"))
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/airport3Dataset.json"))
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/affordableHousingDataset.json"));
+
+    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+        .createDefaultArcGISServerTestDataStore();
+    List<Name> names = this.dataStore.createTypeNames();
+
+    assertEquals(3, names.size());
+    assertEquals(TYPENAME2, names.get(0).getLocalPart());
+    assertEquals(TYPENAME4, names.get(1).getLocalPart());
+    assertEquals(TYPENAME3, names.get(2).getLocalPart());
+    assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
+        names.get(0).getNamespaceURI());
+
+    assertNotNull(this.dataStore.getEntry(
+        new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME2)));
   }
 
   @Test
@@ -174,7 +216,7 @@ public class ArcGISRestDataStoreTest {
             .readJSONAsStream("test-data/lgaDataset.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-        .createDefaultTestDataStore();
+        .createDefaultOpenDataTestDataStore();
     this.dataStore.createTypeNames();
 
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
@@ -233,7 +275,7 @@ public class ArcGISRestDataStoreTest {
             .readJSONAsStream("test-data/lgaDataset.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
-        .createDefaultTestDataStore();
+        .createDefaultOpenDataTestDataStore();
     this.dataStore.createTypeNames();
 
     FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
