@@ -11,6 +11,11 @@ and ArcGIS Online.
 Specifically, only the FeatureServer services on either ArcGIS Online (Open Data) or 
 ArcGIS Server FeatureServers are covered so far.
 
+FeatureServers, non entire services, are used as endpoints for ArcGIS
+Servers, beacuse there may be hundreds of different layers, and it seems ESRI throttlea back 
+requests, leading to very long times for building feature types.
+
+
 The main parmater is the API URL, which can take the form of:
 * ArcGIS Online (Open Data): http://data.dhs.opendata.arcgis.com/data.json  
 * ArcGIS FeaureServer: http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer
