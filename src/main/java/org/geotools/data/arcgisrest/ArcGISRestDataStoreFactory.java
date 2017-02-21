@@ -52,26 +52,24 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   private static List<Param> paramMetadata = new ArrayList<Param>(10);
 
-  public static final Param NAMESPACE_PARAM = new Param("namespace",
-      String.class, "namespace associated to this data store", true);
-  public static final Param URL_PARAM = new Param("API URL", String.class,
-      "endpoint of the ArcGSI ReST API (either the data.json URL of an OpenData catalog, or the FeatureService URL of an ArcGIS Server API", true);
-  public static final Param USER_PARAM = new Param("User", String.class,
-      new SimpleInternationalString("the username of the endpoint"), false,
-      null);
-  public static final Param PASSWORD_PARAM = new Param("Password", String.class,
-      new SimpleInternationalString(
-          "the password associated with the username."),
-      false, null,
+  public static final Param NAMESPACE_PARAM = new Param(
+      "namespace", String.class, "", true);
+  public static final Param URL_PARAM = new Param(
+      "Endpoint of the ArcGSI ReST API (either the data.json URL of an OpenData catalog, or the FeatureService URL of an ArcGIS Server API)",
+      String.class, "", true);
+  public static final Param USER_PARAM = new Param(
+      "Username of the endpoint", String.class, "", false, null);
+  public static final Param PASSWORD_PARAM = new Param(
+      "Password associated with the username.", String.class, "", false, null,
       Collections.singletonMap(Parameter.IS_PASSWORD, Boolean.TRUE));
-  public static final Param ISOPENDATA_PARAM = new Param("Is OpenData",
+  public static final Param ISOPENDATA_PARAM = new Param("Endpoint is an OpenData catalog",
       Boolean.class,
       new SimpleInternationalString("is the data source an OpedData servive?"),
       true, false);
 
   static {
     paramMetadata.add(NAMESPACE_PARAM);
-    paramMetadata.add(URL_PARAM);            
+    paramMetadata.add(URL_PARAM);
     paramMetadata.add(ISOPENDATA_PARAM);
     paramMetadata.add(USER_PARAM);
     paramMetadata.add(PASSWORD_PARAM);

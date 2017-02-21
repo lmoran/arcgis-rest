@@ -144,9 +144,8 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
     // FIXME: the abstract of the feature type is not set
     this.resInfo.setDescription(ds.getDescription());
-    this.resInfo.setDescription(ds.getDescription());
 
-    this.resInfo.setTitle(ds.getTitle());
+    this.resInfo.setTitle(ds.getTitle() != null ? ds.getTitle() : ws.getName());
     this.resInfo.setName(ws.getName());
     ReferencedEnvelope geoBbox = new ReferencedEnvelope(
         ws.getExtent().getXmin(), ws.getExtent().getXmax(),

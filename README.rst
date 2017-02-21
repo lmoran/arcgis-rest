@@ -17,9 +17,13 @@ requests, leading to very long times for building feature types.
 
 
 The main parmater is the API URL, which can take the form of:
-* ArcGIS Online (Open Data): http://data.dhs.opendata.arcgis.com/data.json  
-* ArcGIS FeaureServer: http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer
+* ArcGIS Online (Open Data): http://data.<data provider name>.opendata.arcgis.com/data.json  
+* ArcGIS FeaureServer: http://services.arcgis.com/<daat provider id>/ArcGIS/rest/services/<folder>/FeatureServer
 
+Some services to test:
+http://data.dhs.opendata.arcgis.com/data.json
+http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer
+http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Airports_2/FeatureServer
 
 Requirements
 ------------
