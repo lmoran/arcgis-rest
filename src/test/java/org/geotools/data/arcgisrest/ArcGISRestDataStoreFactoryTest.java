@@ -51,7 +51,7 @@ public class ArcGISRestDataStoreFactoryTest {
 
   public static String URL = "http://data.dhs.opendata.arcgis.com/data.json";
   public static String WSURL = "https://services.arcgis.com/B7qHofahIc9hrOqB/arcgis/rest/services/LGA_Profile_2014_(beta)/FeatureServer/0";
-  public static String URL_ARCGISSERVER = "http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services";
+  public static String URL_ARCGISSERVER = "http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer";
   public static String QUERYURL = WSURL + "/query";
   public static String NAMESPACE = "http://aurin.org.au";
   public static String USER = "testuser";

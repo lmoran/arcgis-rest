@@ -61,8 +61,7 @@ public class ArcGISRestDataStoreTest {
   public static String TYPENAME1 = "LGAProfiles2014Beta";
   public static String TYPENAME2 = "Airports_2";
   public static String TYPENAME3 = "Airports_3";
-  public static String TYPENAME4 = "affordable_housing"; 
-
+  
   private ArcGISRestDataStore dataStore;
 
   private HttpClient clientMock;
@@ -164,31 +163,22 @@ public class ArcGISRestDataStoreTest {
     PowerMockito.whenNew(GetMethod.class).withNoArguments().thenReturn(getMock)
         .thenReturn(getMock);
     when(clientMock.executeMethod(getMock)).thenReturn(HttpStatus.SC_OK)
-        .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK)
-        .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK)
-        .thenReturn(HttpStatus.SC_OK);
+        .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK);
     when(getMock.getResponseBodyAsStream())
-        .thenReturn(ArcGISRestDataStoreFactoryTest
-            .readJSONAsStream("test-data/services.json"))
         .thenReturn(ArcGISRestDataStoreFactoryTest
             .readJSONAsStream("test-data/FeatureServerAirport.json"))
         .thenReturn(ArcGISRestDataStoreFactoryTest
-            .readJSONAsStream("test-data/FeatureServerAffordableHousing.json"))
-        .thenReturn(ArcGISRestDataStoreFactoryTest
             .readJSONAsStream("test-data/airport2Dataset.json"))
         .thenReturn(ArcGISRestDataStoreFactoryTest
-            .readJSONAsStream("test-data/airport3Dataset.json"))
-        .thenReturn(ArcGISRestDataStoreFactoryTest
-            .readJSONAsStream("test-data/affordableHousingDataset.json"));
+            .readJSONAsStream("test-data/airport3Dataset.json"));
 
     this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
         .createDefaultArcGISServerTestDataStore();
     List<Name> names = this.dataStore.createTypeNames();
 
-    assertEquals(3, names.size());
+    assertEquals(2, names.size());
     assertEquals(TYPENAME2, names.get(0).getLocalPart());
-    assertEquals(TYPENAME4, names.get(1).getLocalPart());
-    assertEquals(TYPENAME3, names.get(2).getLocalPart());
+    assertEquals(TYPENAME3, names.get(1).getLocalPart());
     assertEquals(ArcGISRestDataStoreFactoryTest.NAMESPACE,
         names.get(0).getNamespaceURI());
 

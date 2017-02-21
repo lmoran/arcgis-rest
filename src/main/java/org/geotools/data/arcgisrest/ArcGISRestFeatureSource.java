@@ -56,6 +56,12 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.gson.Gson;
 
+/**
+ * Source of features for the ArcGIS ReST API
+ * 
+ * @author lmorandini
+ *
+ */
 public class ArcGISRestFeatureSource extends ContentFeatureSource {
 
   // FIXME: Are we user ArcGIS ReST API always uses this for the "spatial"
@@ -130,16 +136,14 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
       this.resInfo.setCRS(CRS.decode(
           "EPSG:" + ws.getExtent().getSpatialReference().getLatestWkid()));
     } catch (FactoryException e) {
-      // FIXME: this is not nice
+      // FIXME: this is not nice: exceptions should not be re-packaged
       throw new IOException(e.getMessage());
     }
 
-    this.resInfo.setDescription(ds.getDescription()); // FIXME: the abstract of
-    // the feature type is not
-    // set
     this.resInfo.setKeywords(new HashSet(ds.getKeyword()));
 
     // FIXME: the abstract of the feature type is not set
+    this.resInfo.setDescription(ds.getDescription());
     this.resInfo.setDescription(ds.getDescription());
 
     this.resInfo.setTitle(ds.getTitle());
@@ -228,7 +232,6 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
         this.composeExtent(this.getBoundsInternal(query)));
 
     try {
-      // FIXME: the URL building is rather awkward
       cnt = (new Gson()).fromJson(
           ArcGISRestDataStore.InputStreamToString(this.dataStore
               .retrieveJSON("POST", (new URL(this.composeQueryURL())), params)),
@@ -252,7 +255,7 @@ public class ArcGISRestFeatureSource extends ContentFeatureSource {
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 
-    // FIXME: currently it sets _only_ the BBOX query
+    // TODO: currently it sets _only_ the BBOX query
     params.put(ArcGISRestDataStore.GEOMETRY_PARAM,
         this.composeExtent(this.getBounds(query)));
 

@@ -9,11 +9,11 @@ This datastore implements a very limited portion of the ArcGIS ReST API
 and ArcGIS Online. 
 
 Specifically, only the FeatureServer services on either ArcGIS Online (Open Data) or 
-ArcGIS Server folders are covered so far.
+ArcGIS Server FeatureServers are covered so far.
 
 The main parmater is the API URL, which can take the form of:
 * ArcGIS Online (Open Data): http://data.dhs.opendata.arcgis.com/data.json  
-* ArcGIS folder: http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics
+* ArcGIS FeaureServer: http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer
 
 
 Requirements
@@ -28,7 +28,7 @@ Functionality
 Currently, only a part of the Feature Service (http://resources.arcgis.com/en/help/arcgis-rest-api/#/Feature_Service/02r3000000z2000000/)
 is implemented, which allows to:
 
-* It can etrieve a list of avaialable layers
+* It can retrieve a list of avaialable layers from a FeatureServer
 * It can query a layer by bounding box
 
 

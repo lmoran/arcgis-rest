@@ -23,10 +23,15 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.geotools.data.Query;
@@ -35,7 +40,6 @@ import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.arcgisrest.schema.catalog.Error_;
-import org.geotools.data.arcgisrest.schema.services.Services;
 import org.geotools.data.arcgisrest.schema.services.feature.Featureserver;
 
 import org.geotools.data.store.ContentDataStore;
@@ -58,6 +62,12 @@ import com.google.gson.JsonSyntaxException;
 
 import sun.misc.IOUtils;
 
+/**
+ * Main class of the data store
+ *  
+ * @author lmorandini
+ *
+ */
 public class ArcGISRestDataStore extends ContentDataStore {
 
   // Common parameters used in the API
@@ -71,6 +81,10 @@ public class ArcGISRestDataStore extends ContentDataStore {
   // Parameter values
   public static final String FORMAT_JSON = "json";
   public static final String FORMAT_GEOJSON = "geojson";
+
+  // Request parameters
+  protected static final int REQUEST_THREADS = 5;
+  protected static final int REQUEST_TIMEOUT = 60;
 
   // Default request parameter values
   public static Map<String, Object> DEFAULT_PARAMS = new HashMap<String, Object>();
@@ -90,10 +104,6 @@ public class ArcGISRestDataStore extends ContentDataStore {
   // Default feature type geometry attribute
   public static final String GEOMETRY_ATTR = "geometry";
 
-  // FIXME: can be made to work for both ArcGIS online and ArcGIS ReST API
-  // proper?
-  // AFAIK, Arc online retuns a data.json document tha contains the ArcGIS ReST
-  // API endpoints proper, which is different from teh ArcGIS ReST API
   protected URL namespace;
   protected URL apiUrl;
   protected boolean opendataFlag = false;
@@ -102,17 +112,17 @@ public class ArcGISRestDataStore extends ContentDataStore {
   protected Catalog catalog;
   protected Map<Name, Dataset> datasets = new HashMap<Name, Dataset>();
 
-  public ArcGISRestDataStore(String namespace, String apiEndpoint,
+  public ArcGISRestDataStore(String namespaceIn, String apiEndpoint,
       boolean opendataFlagIn, String user, String password)
       throws MalformedURLException, JsonSyntaxException, IOException {
 
     super();
 
     try {
-      this.namespace = new URL(namespace);
+      this.namespace = new URL(namespaceIn);
     } catch (MalformedURLException e) {
       LOGGER.log(Level.SEVERE,
-          "Namespace \"" + namespace + "\" is not properly formatted", e);
+          "Namespace \"" + namespaceIn + "\" is not properly formatted", e);
       throw (e);
     }
     try {
@@ -138,120 +148,51 @@ public class ArcGISRestDataStore extends ContentDataStore {
       throw (e);
     }
 
-    try {
-      // Gets the catalog of web services in either the Open Data catalog, or
-      // the ArcGIS Server list of services
+    // Gets the catalog of web services in either the Open Data catalog, or
+    // the ArcGIS Server list of services
 
-      // If this is the Open Data catalog, it loads it
-      if (this.opendataFlag == true) {
-        this.catalog = (new Gson()).fromJson(response, Catalog.class);
-        if (this.catalog == null) {
-          throw (new JsonSyntaxException("Malformed JSON"));
-        }
-
-        // It it is an ArcGIS Server, cycles through the services list to
-        // retrieve the web services URL of the FeautreServers
-      } else {
-        this.catalog = new Catalog();
-        Services services = (new Gson()).fromJson(response, Services.class);
-        if (services == null) {
-          throw (new JsonSyntaxException("Malformed JSON"));
-        }
-
-        services.getServices().forEach(srv -> {
-          if (srv.getType().equals(FEATURESERVER_SERVICE)) {
-
-            Featureserver featureServer = null;
-            String featureServerString = null;
-            URL featureServerURL = null;
-            try {
-              // XXX
-              String s = srv.getName().indexOf("/") > -1
-                  ? srv.getName().split("/")[1] : srv.getName();
-              featureServerURL = new URL(srv.getUrl() != null ? srv.getUrl()
-                  : apiUrl + "/" + s + "/" + FEATURESERVER_SERVICE);
-              featureServerString = ArcGISRestDataStore.InputStreamToString(
-                  this.retrieveJSON("GET", featureServerURL, DEFAULT_PARAMS));
-              featureServer = (new Gson()).fromJson(featureServerString,
-                  Featureserver.class);
-
-              if (featureServerURL == null) {
-                throw (new JsonSyntaxException("Malformed JSON"));
-              }
-            } catch (JsonSyntaxException e) {
-              // Checks whether we have an ArcGIS error message
-              Error_ errWS = (new Gson()).fromJson(featureServerString,
-                  Error_.class);
-              LOGGER.log(Level.SEVERE,
-                  "Error during retrieval of feature server " + errWS.getCode()
-                      + " " + errWS.getMessage(),
-                  e);
-              return;
-            } catch (IOException e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-            }
-
-            String featureServerURLString = featureServerURL.toString();
-            featureServer.getLayers().forEach(layer -> {
-              Dataset ds = new Dataset();
-              ds.setWebService(featureServerURLString + "/" + layer.getId());
-              this.catalog.getDataset().add(ds);
-            });
-          }
-        });
-
+    // If this is the Open Data catalog, it loads it
+    if (this.opendataFlag == true) {
+      this.catalog = (new Gson()).fromJson(response, Catalog.class);
+      if (this.catalog == null) {
+        throw (new JsonSyntaxException("Malformed JSON"));
       }
-    } catch (
 
-    JsonSyntaxException e) {
-      // Checks whether we have an AercGIS error message
-      err = (new Gson()).fromJson(response, Error_.class);
-      LOGGER.log(Level.SEVERE,
-          "JSON syntax error " + err.getCode() + " " + err.getMessage(), e);
-      throw (e);
-    }
+      // It it is an ArcGIS Server, cycles through the services list to
+      // retrieve the web services URL of the FeautreServers
+    } else {
+      this.catalog = new Catalog();
 
-    // Sets the list of the datasets referenced in the catalog
-    this.entries.clear();
-    this.datasets.clear();
-    if (this.catalog.getDataset() != null) {
-      this.catalog.getDataset().forEach((ds) -> {
-        Webservice ws = null;
-        InputStream responseWs = null;
-        String responseWSString = null;
-        try {
-          responseWSString = ArcGISRestDataStore.InputStreamToString(
-              this.retrieveJSON("GET", new URL(ds.getWebService().toString()),
-                  ArcGISRestDataStore.DEFAULT_PARAMS));
-        } catch (IOException e) {
-          LOGGER.log(Level.SEVERE, "Error during retrieval of dataset '"
-              + ds.getWebService() + "' " + e.getMessage(), e);
-          return;
+      Featureserver featureServer = null;
+
+      try {
+        featureServer = (new Gson()).fromJson(response, Featureserver.class);
+        if (featureServer == null) {
+          throw (new JsonSyntaxException("Malformed JSON"));
         }
+      } catch (JsonSyntaxException e) {
+        // Checks whether we have an ArcGIS error message
+        Error_ errWS = (new Gson()).fromJson(response, Error_.class);
+        LOGGER.log(Level.SEVERE, "Error during retrieval of feature server "
+            + errWS.getCode() + " " + errWS.getMessage(), e);
+        return;
+      }
 
-        try {
-          ws = (new Gson()).fromJson(responseWSString, Webservice.class);
-          if (ws == null) {
-            throw (new JsonSyntaxException("Malformed JSON"));
-          }
-        } catch (JsonSyntaxException e) {
-          // Checks whether we have an ArcGIS error message
-          Error_ errWS = (new Gson()).fromJson(responseWSString, Error_.class);
-          LOGGER.log(Level.SEVERE,
-              "Error during retrieval of dataset " + ds.getWebService() + " "
-                  + errWS.getCode() + " " + errWS.getMessage(),
-              e);
-          return;
-        }
-
-        Name dsName = new NameImpl(namespace, ws.getName());
-        ContentEntry entry = new ContentEntry(this, dsName);
-        this.datasets.put(dsName, ds);
-        this.entries.put(dsName, entry);
-      });
+      try {
+        String featureServerURLString = apiUrl.toString();
+        featureServer.getLayers().forEach(layer -> {
+          Dataset ds = new Dataset();
+          ds.setWebService(featureServerURLString + "/" + layer.getId());
+          this.catalog.getDataset().add(ds);
+        });
+      } catch (JsonSyntaxException e) {
+        // Checks whether we have an AercGIS error message
+        err = (new Gson()).fromJson(response, Error_.class);
+        LOGGER.log(Level.SEVERE,
+            "JSON syntax error " + err.getCode() + " " + err.getMessage(), e);
+        throw (e);
+      }
     }
-
   }
 
   /**
@@ -276,13 +217,95 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
   @Override
   protected List<Name> createTypeNames() {
-    List<Name> typeNames = new ArrayList<Name>();
-    Iterator<ContentEntry> iter = this.entries.values().iterator();
-    while (iter.hasNext()) {
-      typeNames.add(iter.next().getName());
+
+    if (this.entries.isEmpty() == false) {
+      return new ArrayList<Name>(this.entries.keySet());
     }
 
-    return typeNames;
+    final List<Dataset> datasetList = this.getCatalog().getDataset();
+    List<Name> typeNames = new ArrayList<Name>();
+
+    /**
+     * Since there could be many datasets in the FeatureServer, it makes sense
+     * to parallelize the requests to cut down processing time
+     */
+    final class WsCallResult {
+      public Dataset dataset;
+      public Webservice webservice;
+
+      public WsCallResult(Dataset ds, Webservice ws) {
+        this.dataset = ds;
+        this.webservice = ws;
+      };
+    }
+
+    final class WsCall implements Callable<WsCallResult> {
+      public final Dataset dataset;
+
+      public WsCall(Dataset dsIn) {
+        this.dataset = dsIn;
+      }
+
+      public WsCallResult call() throws Exception {
+
+        Webservice ws = null;
+        InputStream responseWs = null;
+        String responseWSString = null;
+
+        try {
+          responseWSString = ArcGISRestDataStore
+              .InputStreamToString(retrieveJSON("GET",
+                  new URL(this.dataset.getWebService().toString()),
+                  ArcGISRestDataStore.DEFAULT_PARAMS));
+        } catch (IOException e) {
+          LOGGER.log(Level.SEVERE, "Error during retrieval of dataset '"
+              + this.dataset.getWebService() + "' " + e.getMessage(), e);
+          return null;
+        }
+
+        try {
+          ws = (new Gson()).fromJson(responseWSString, Webservice.class);
+          if (ws == null) {
+            throw (new JsonSyntaxException("Malformed JSON"));
+          }
+        } catch (JsonSyntaxException e) {
+          // Checks whether we have an ArcGIS error message
+          Error_ errWS = (new Gson()).fromJson(responseWSString, Error_.class);
+          LOGGER.log(Level.SEVERE,
+              "Error during retrieval of dataset "
+                  + this.dataset.getWebService() + " " + errWS.getCode() + " "
+                  + errWS.getMessage(),
+              e);
+          return null;
+        }
+
+        return new WsCallResult(this.dataset, ws);
+      }
+    }
+
+    ExecutorService executor = Executors.newFixedThreadPool(REQUEST_THREADS);
+    try {
+      Collection<WsCall> calls = new ArrayList<WsCall>();
+      datasetList.stream().forEach((ds) -> {
+        calls.add(new WsCall(ds));
+      });
+
+      List<Future<WsCallResult>> futures = executor.invokeAll(calls,
+          (REQUEST_TIMEOUT * calls.size()) / REQUEST_THREADS, TimeUnit.SECONDS);
+
+      for (Future<WsCallResult> future : futures) {
+        WsCallResult result = future.get();
+        Name dsName = new NameImpl(namespace.toExternalForm(),
+            result.webservice.getName());
+        ContentEntry entry = new ContentEntry(this, dsName);
+        this.datasets.put(dsName, result.dataset);
+        this.entries.put(dsName, entry);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return new ArrayList<Name>(this.entries.keySet());
   }
 
   @Override
@@ -371,7 +394,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
       // If HTTP error, throws an exception
       if (status != HttpStatus.SC_OK) {
-        throw new IOException("HTTP Status: " + status + " for URL: " + uri + " response: " + meth.getResponseBodyAsString());
+        throw new IOException("HTTP Status: " + status + " for URL: " + uri
+            + " response: " + meth.getResponseBodyAsString());
       }
 
       // Retrieve the wait period is returned by the server

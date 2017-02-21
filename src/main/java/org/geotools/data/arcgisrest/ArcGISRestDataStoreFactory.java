@@ -32,10 +32,15 @@ import java.util.logging.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.Parameter;
-import org.geotools.data.DataAccessFactory.Param;
 import org.geotools.util.SimpleInternationalString;
 import org.geotools.util.logging.Logging;
 
+/**
+ * Data store factory class
+ * 
+ * @author lmorandini
+ *
+ */
 public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
 
   /** Package's logger */
@@ -50,7 +55,7 @@ public class ArcGISRestDataStoreFactory implements DataStoreFactorySpi {
   public static final Param NAMESPACE_PARAM = new Param("namespace",
       String.class, "namespace associated to this data store", true);
   public static final Param URL_PARAM = new Param("API URL", String.class,
-      "endpoint of the ArcGSI ReST API (either the data.json of an OpenData catalog, or the folder of an ArcGIS Server API", true);
+      "endpoint of the ArcGSI ReST API (either the data.json URL of an OpenData catalog, or the FeatureService URL of an ArcGIS Server API", true);
   public static final Param USER_PARAM = new Param("User", String.class,
       new SimpleInternationalString("the username of the endpoint"), false,
       null);

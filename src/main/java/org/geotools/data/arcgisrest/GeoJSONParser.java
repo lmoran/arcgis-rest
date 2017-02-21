@@ -71,6 +71,8 @@ public class GeoJSONParser implements SimpleFeatureIterator {
   static public final String ERROR_DETAILS = "details";
   static public final String GEOJSON_TYPE = "type";
   static public final String GEOJSON_TYPE_VALUE_FC = "FeatureCollection";
+  static public final String GEOJSON_PROPERTIES = "properties";
+  static public final String GEOJSON_TOTALFEATURES = "totalFeatures";
   static public final String FEATURES = "features";
   static public final String CRS = "crs";
   static public final String CRS_TYPE = "type";
@@ -107,15 +109,6 @@ public class GeoJSONParser implements SimpleFeatureIterator {
   protected boolean inFeatureCollection = false;
 
   /**
-   * Class holding ArcGIS ReST API error
-   */
-  // private class Error {
-  // public int code;
-  // public String message;
-  // public String details;
-  // }
-
-  /**
    * Constructor
    * 
    * @param iStream
@@ -128,7 +121,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
    */
   public GeoJSONParser(InputStream iStream, SimpleFeatureType featureTypeIn,
       Logger loggerIn) throws UnsupportedEncodingException {
-    this.reader = new JsonReader(new InputStreamReader(iStream, ENCODING)); 
+    this.reader = new JsonReader(new InputStreamReader(iStream, ENCODING));
     LOGGER = loggerIn;
     this.featureType = featureTypeIn;
   }
@@ -212,10 +205,24 @@ public class GeoJSONParser implements SimpleFeatureIterator {
         // Deals with an error as reported by the ArcGIS ReST API
         throw this.parseError();
 
+      case GEOJSON_PROPERTIES:
+        // TODO: ESRI extension to GeoJSON
+        this.reader.beginObject();
+        while (this.reader.hasNext()) {
+          this.reader.skipValue();
+        }
+        this.reader.endObject();
+        break;
+
+      case GEOJSON_TOTALFEATURES:
+        // TODO: ESRI extension to GeoJSON
+        this.reader.skipValue();
+        break;
+
       case CRS:
         this.reader.beginObject();
         while (this.reader.hasNext()) {
-          // TODO: this should be checked against the CRS of the feature type 
+          // TODO: this should be checked against the CRS of the feature type
           this.reader.skipValue();
         }
         this.reader.endObject();
@@ -236,6 +243,10 @@ public class GeoJSONParser implements SimpleFeatureIterator {
         this.LOGGER.log(Level.WARNING, "Unrecognised property");
       }
     }
+
+    // If we come to this, the GeoJSON is not correctly formatted
+    this.reader.beginObject();
+    this.inFeatureCollection = false;
   }
 
   /**
@@ -305,7 +316,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
     return GeoJSONParser.listToArray(coords);
   }
 
-  /** 
+  /**
    * Parses a Point GeoJSON coordinates array and returns them in an array
    * 
    * @return array with coordinates
@@ -626,7 +637,7 @@ public class GeoJSONParser implements SimpleFeatureIterator {
    * Parses an ArcGIS ReST API error message
    * 
    * @return the exception reflecting the error
-   * @throws IOException 
+   * @throws IOException
    */
   public IOException parseError() throws IOException {
 
