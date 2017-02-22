@@ -133,7 +133,7 @@ public class Dataset {
      */
     @SerializedName("distribution")
     @Expose
-    private Object distribution;
+    private List<Distribution> distribution = new ArrayList<Distribution>();
     /**
      * Unique Identifier
      * <p>
@@ -583,7 +583,7 @@ public class Dataset {
      * @return
      *     The distribution
      */
-    public Object getDistribution() {
+    public List<Distribution> getDistribution() {
         return distribution;
     }
 
@@ -595,7 +595,7 @@ public class Dataset {
      * @param distribution
      *     The distribution
      */
-    public void setDistribution(Object distribution) {
+    public void setDistribution(List<Distribution> distribution) {
         this.distribution = distribution;
     }
 

@@ -38,6 +38,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.MalformedJsonException;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.Point;
 
@@ -295,6 +296,18 @@ public class GeoJSONParserTest {
     assertTrue(geom.getClass().getSimpleName().equals("LineString"));
     assertEquals(22.6f, ((LineString) (geom)).getCentroid().getX(), 0.1f);
     assertEquals(27.9f, ((LineString) (geom)).getCentroid().getY(), 0.1f);
+  }
+
+  @Test
+  public void parseGeometryMultiLineString() throws Exception {
+
+    Geometry geom = (new GeoJSONParser(new ByteArrayInputStream(
+        "{ \"type\": \"MultiLineString\", \"coordinates\":  [[ [100.0, 0.0], [101.0, 1.0] ],[ [102.0, 2.0], [103.0, 3.0] ]]}"
+            .getBytes()), this.fType, null)).parseGeometry();
+
+    assertTrue(geom.getClass().getSimpleName().equals("MultiLineString"));
+    assertEquals(101.5f, ((MultiLineString) (geom)).getCentroid().getX(), 0.1f);
+    assertEquals(1.5f, ((MultiLineString) (geom)).getCentroid().getY(), 0.1f);
   }
 
   @Test(expected = NoSuchElementException.class)

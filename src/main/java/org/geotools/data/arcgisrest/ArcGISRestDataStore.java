@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -38,6 +39,7 @@ import org.geotools.data.Query;
 
 import org.geotools.data.arcgisrest.schema.catalog.Catalog;
 import org.geotools.data.arcgisrest.schema.catalog.Dataset;
+import org.geotools.data.arcgisrest.schema.catalog.Distribution;
 import org.geotools.data.arcgisrest.schema.webservice.Webservice;
 import org.geotools.data.arcgisrest.schema.catalog.Error_;
 import org.geotools.data.arcgisrest.schema.services.feature.Featureserver;
@@ -64,11 +66,14 @@ import sun.misc.IOUtils;
 
 /**
  * Main class of the data store
- *  
+ * 
  * @author lmorandini
  *
  */
 public class ArcGISRestDataStore extends ContentDataStore {
+
+  // API version supported
+  public static final double MINIMUM_API_VERSION = 10.41;
 
   // Common parameters used in the API
   public static final String GEOMETRYTYPE_PARAM = "geometryType";
@@ -81,6 +86,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
   // Parameter values
   public static final String FORMAT_JSON = "json";
   public static final String FORMAT_GEOJSON = "geojson";
+  public static final String FORMAT_ESRIREST = "Esri REST";
+  public static final String CAPABILITIES_QUERY = "Query";
 
   // Request parameters
   protected static final int REQUEST_THREADS = 5;
@@ -225,6 +232,9 @@ public class ArcGISRestDataStore extends ContentDataStore {
     final List<Dataset> datasetList = this.getCatalog().getDataset();
     List<Name> typeNames = new ArrayList<Name>();
 
+    // Starts an executor with a fixed numbe rof threads
+    ExecutorService executor = Executors.newFixedThreadPool(REQUEST_THREADS);
+
     /**
      * Since there could be many datasets in the FeatureServer, it makes sense
      * to parallelize the requests to cut down processing time
@@ -265,7 +275,7 @@ public class ArcGISRestDataStore extends ContentDataStore {
 
         try {
           ws = (new Gson()).fromJson(responseWSString, Webservice.class);
-          if (ws == null) {
+          if (ws == null || ws.getCurrentVersion() == null) {
             throw (new JsonSyntaxException("Malformed JSON"));
           }
         } catch (JsonSyntaxException e) {
@@ -279,32 +289,62 @@ public class ArcGISRestDataStore extends ContentDataStore {
           return null;
         }
 
+        // Checks whether the web-service API version is supported and
+        // supports GeoJSON
+        if (ws.getCurrentVersion() < MINIMUM_API_VERSION
+            || ws.getSupportedQueryFormats().toString().toLowerCase()
+                .contains(FORMAT_JSON.toLowerCase()) == false) {
+          LOGGER.log(Level.SEVERE, "Dataset " + this.dataset.getWebService()
+              + " does not support either the API version supported ,or the GeoJSON format");
+          return null;
+        }
+
         return new WsCallResult(this.dataset, ws);
       }
     }
 
-    ExecutorService executor = Executors.newFixedThreadPool(REQUEST_THREADS);
+    // Builds a list of calls to be made to retrieve FeatureServer web services
+    // metadata that support the ReST API (if there are not distribution
+    // elements, it
+    // is supposed NOT to support it)
     try {
       Collection<WsCall> calls = new ArrayList<WsCall>();
       datasetList.stream().forEach((ds) -> {
-        calls.add(new WsCall(ds));
+        if (ds.getWebService().toString().contains(FEATURESERVER_SERVICE)) {
+          calls.add(new WsCall(ds));
+        }
       });
 
       List<Future<WsCallResult>> futures = executor.invokeAll(calls,
           (REQUEST_TIMEOUT * calls.size()) / REQUEST_THREADS, TimeUnit.SECONDS);
 
       for (Future<WsCallResult> future : futures) {
+
         WsCallResult result = future.get();
-        Name dsName = new NameImpl(namespace.toExternalForm(),
-            result.webservice.getName());
-        ContentEntry entry = new ContentEntry(this, dsName);
-        this.datasets.put(dsName, result.dataset);
-        this.entries.put(dsName, entry);
+
+        // Checks whether the lasyer supports query and JSON
+        // TODO: I am not quite sure this catches cases in which ESRI JSON is
+        // supporte, but NOT GeoJSON
+        if (result != null
+            && result.webservice.getSupportedQueryFormats().toLowerCase()
+                .contains(FORMAT_JSON.toLowerCase())
+            && result.webservice.getCapabilities().toLowerCase()
+                .contains(CAPABILITIES_QUERY.toLowerCase())) {
+          Name dsName = new NameImpl(namespace.toExternalForm(),
+              result.webservice.getName());
+          ContentEntry entry = new ContentEntry(this, dsName);
+          this.datasets.put(dsName, result.dataset);
+          this.entries.put(dsName, entry);
+        }
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
 
+    // Shutdowsn the executor thread pool
+    executor.shutdown();
+
+    // Returns the list of datastore entries
     return new ArrayList<Name>(this.entries.keySet());
   }
 

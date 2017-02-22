@@ -43,6 +43,7 @@ import com.google.gson.stream.MalformedJsonException;
 import com.vividsolutions.jts.geom.Geometry;
 
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 
 import org.geotools.geometry.jts.GeometryBuilder;
 import com.vividsolutions.jts.geom.Point;
@@ -483,6 +484,17 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       this.reader.endObject();
       return (Geometry) builder.lineString(coords);
 
+    case GEOMETRY_MULTILINE:
+      this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
+      List<double[]> lineArrays = this.parseMultiLineStringCoordinates();
+      LineString[] lines = new LineString[lineArrays.size()];
+      int i = 0;
+      for (double[] array : lineArrays) {
+        lines[i++] = builder.lineString(array);
+      }
+      this.reader.endObject();
+      return (Geometry) builder.multiLineString(lines);
+
     case GEOMETRY_POLYGON:
       this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
       List<double[]> rings = this.parsePolygonCoordinates();
@@ -494,9 +506,9 @@ public class GeoJSONParser implements SimpleFeatureIterator {
       this.checkPropertyName(FEATURE_GEOMETRY_COORDINATES);
       List<List<double[]>> polyArrays = this.parseMultiPolygonCoordinates();
       Polygon[] polys = new Polygon[polyArrays.size()];
-      int i = 0;
+      int j = 0;
       for (List<double[]> array : polyArrays) {
-        polys[i++] = builder.polygon(array.get(0)); // FIXME: what about holes?
+        polys[j++] = builder.polygon(array.get(0)); // FIXME: what about holes?
       }
       this.reader.endObject();
       return (Geometry) builder.multiPolygon(polys);
