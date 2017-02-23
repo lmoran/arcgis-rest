@@ -566,6 +566,11 @@ public class GeoJSONParser implements SimpleFeatureIterator {
           props.put(name, this.reader.nextString());
           break;
 
+        case NULL:
+          this.reader.nextNull();
+          props.put(name, null);
+          break;
+
         default:
           throw (new JsonSyntaxException("Value expected"));
         }

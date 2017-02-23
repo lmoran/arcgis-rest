@@ -1,6 +1,7 @@
 ArcGIS ReST API DataStore
 =========================
 
+
 Overview
 --------
 
@@ -25,10 +26,11 @@ http://data.dhs.opendata.arcgis.com/data.json
 http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Zoning_Data/FeatureServer
 http://services.arcgis.com/rOo16HdIMeOBI4Mb/ArcGIS/rest/services/Airports_2/FeatureServer
 
+
 Requirements
 ------------
 
-ArcGIS ReST API 10.41
+ArcGIS ReST API >= 10.41
 
 
 Functionality

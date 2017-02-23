@@ -49,6 +49,7 @@ import org.geotools.data.store.ContentEntry;
 import org.geotools.data.store.ContentFeatureSource;
 import org.opengis.feature.type.Name;
 import org.geotools.feature.NameImpl;
+import org.geotools.util.UnsupportedImplementationException;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethodBase;
@@ -183,6 +184,17 @@ public class ArcGISRestDataStore extends ContentDataStore {
         LOGGER.log(Level.SEVERE, "Error during retrieval of feature server "
             + errWS.getCode() + " " + errWS.getMessage(), e);
         return;
+      }
+
+      // Checks API version and output format of the endpoint
+      if (featureServer.getCurrentVersion() < MINIMUM_API_VERSION
+          || featureServer.getSupportedQueryFormats().toString().toLowerCase()
+              .contains(FORMAT_JSON.toLowerCase()) == false) {
+        UnsupportedImplementationException e = new UnsupportedImplementationException(
+            "FeatureServer " + apiEndpoint
+                + " does not support either the minimum API version required, or the GeoJSON format");
+        LOGGER.log(Level.SEVERE, e.getMessage());
+        throw (e);
       }
 
       try {
@@ -415,7 +427,8 @@ public class ArcGISRestDataStore extends ContentDataStore {
     } else {
       ((PostMethod) (meth)).setContentChunked(true);
       ((PostMethod) (meth)).setRequestBody(kvps);
-      this.LOGGER.log(Level.FINER, "About to query POST " + url.toString());
+      this.LOGGER.log(Level.FINER, "About to query POST " + url.toString()
+          + " with body: " + params.toString());
     }
 
     meth.setURI(uri);

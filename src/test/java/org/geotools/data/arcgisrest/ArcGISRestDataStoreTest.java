@@ -34,6 +34,7 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.geotools.referencing.CRS;
+import org.geotools.util.UnsupportedImplementationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -43,6 +44,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import java.io.IOException;
+import org.geotools.util.UnsupportedImplementationException;
 
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -120,6 +122,25 @@ public class ArcGISRestDataStoreTest {
 
   }
 
+  @Test(expected=UnsupportedImplementationException.class)
+  public void testUnsupportedAPIVersion() throws Exception {
+
+    this.clientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+        .thenReturn(clientMock).thenReturn(clientMock);
+    this.getMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class).withNoArguments().thenReturn(getMock)
+        .thenReturn(getMock);
+    when(clientMock.executeMethod(getMock)).thenReturn(HttpStatus.SC_OK);
+    when(getMock.getResponseBodyAsStream())
+        .thenReturn(ArcGISRestDataStoreFactoryTest
+            .readJSONAsStream("test-data/unsupportedCatalog.json"));
+
+    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+        .createDefaultArcGISServerTestDataStore();
+  }
+
+  
   @Test
   public void testCreateTypeNamesFromArcGISOnline() throws Exception {
 
