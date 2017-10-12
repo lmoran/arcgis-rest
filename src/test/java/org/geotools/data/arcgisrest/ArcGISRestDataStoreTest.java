@@ -60,7 +60,8 @@ public class ArcGISRestDataStoreTest {
   public static String TYPENAME1 = "LGAProfiles2014Beta";
   public static String TYPENAME2 = "Airports_2";
   public static String TYPENAME3 = "Airports_3";
-  
+  public static String TYPENAME4 = "Principal Bicycle Network";
+
   private ArcGISRestDataStore dataStore;
 
   private HttpClient clientMock;
@@ -321,4 +322,76 @@ public class ArcGISRestDataStoreTest {
     assertEquals(false, iter.hasNext());
   }
 
+  @Test
+  public void testFeaturesWithDate() throws Exception {
+
+    this.clientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+      .thenReturn(clientMock).thenReturn(clientMock);
+    this.getMock = PowerMockito.mock(GetMethod.class);
+    PowerMockito.whenNew(GetMethod.class).withNoArguments().thenReturn(getMock)
+      .thenReturn(getMock);
+    when(clientMock.executeMethod(getMock)).thenReturn(HttpStatus.SC_OK)
+      .thenReturn(HttpStatus.SC_OK).thenReturn(HttpStatus.SC_OK);
+    when(getMock.getResponseBodyAsStream())
+      .thenReturn(ArcGISRestDataStoreFactoryTest
+        .readJSONAsStream("test-data/catalog.json"))
+      .thenReturn(ArcGISRestDataStoreFactoryTest
+        .readJSONAsStream("test-data/bicycleDataset.json"))
+      .thenReturn(ArcGISRestDataStoreFactoryTest
+        .readJSONAsStream("test-data/bicycleDataset.json"));
+
+    this.dataStore = (ArcGISRestDataStore) ArcGISRestDataStoreFactoryTest
+      .createDefaultOpenDataTestDataStore();
+    this.dataStore.createTypeNames();
+
+    FeatureSource<SimpleFeatureType, SimpleFeature> src = this.dataStore
+      .createFeatureSource(this.dataStore.getEntry(
+        new NameImpl(ArcGISRestDataStoreFactoryTest.NAMESPACE, TYPENAME4)));
+    src.getSchema();
+
+    this.clientMock = PowerMockito.mock(HttpClient.class);
+    PowerMockito.whenNew(HttpClient.class).withNoArguments()
+      .thenReturn(this.clientMock);
+
+    this.postMock = PowerMockito.mock(PostMethod.class);
+    PowerMockito.whenNew(PostMethod.class).withNoArguments()
+      .thenReturn(this.postMock);
+    when(this.clientMock.executeMethod(postMock)).thenReturn(HttpStatus.SC_OK);
+    when(this.postMock.getResponseBodyAsStream())
+      .thenReturn(ArcGISRestDataStoreFactoryTest
+        .readJSONAsStream("test-data/bicycleFeatures.geo.json"));
+
+    FeatureCollection<SimpleFeatureType, SimpleFeature> fc = src
+      .getFeatures(new Query());
+    FeatureIterator iter = fc.features();
+
+    assertEquals(CRS.decode("EPSG:3857"),
+      fc.getSchema().getCoordinateReferenceSystem());
+    assertEquals(true, iter.hasNext());
+    SimpleFeature sf = (SimpleFeature) iter.next();
+    assertEquals("ROAD", sf.getAttribute("LOCAL_TYPE"));
+    assertEquals("2011-08-02T00:00:00.000Z", sf.getAttribute("VERI_DATE"));
+    /*
+    {
+        "OBJECTID": 152042,
+        "NETWORK": "PBN",
+        "TYPE": "On Road",
+        "STATUS": "Existing",
+        "LOCAL_NAME": "MACAULAY",
+        "LOCAL_TYPE": "ROAD",
+        "RD_NUM": 5068,
+        "NAME": "",
+        "SIDE": "B",
+        "FACILITY_L": "KBL",
+        "SURFACE_L": "S",
+        "WIDTH_LEFT": 0,
+        "FACILITY_R": "KBL",
+        "SURFACE_R": "S",
+        "WIDTH_RIGH": 0,
+        "LIGHTING": "",
+        "VERI_DATE": "2011-08-02T00:00:00.000Z"
+      }
+     */
+  }
 }
