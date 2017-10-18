@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 import org.apache.commons.httpclient.HttpClient;
@@ -366,32 +367,12 @@ public class ArcGISRestDataStoreTest {
       .getFeatures(new Query());
     FeatureIterator iter = fc.features();
 
-    assertEquals(CRS.decode("EPSG:3857"),
-      fc.getSchema().getCoordinateReferenceSystem());
     assertEquals(true, iter.hasNext());
     SimpleFeature sf = (SimpleFeature) iter.next();
     assertEquals("ROAD", sf.getAttribute("LOCAL_TYPE"));
-    assertEquals("2011-08-02T00:00:00.000Z", sf.getAttribute("VERI_DATE"));
-    /*
-    {
-        "OBJECTID": 152042,
-        "NETWORK": "PBN",
-        "TYPE": "On Road",
-        "STATUS": "Existing",
-        "LOCAL_NAME": "MACAULAY",
-        "LOCAL_TYPE": "ROAD",
-        "RD_NUM": 5068,
-        "NAME": "",
-        "SIDE": "B",
-        "FACILITY_L": "KBL",
-        "SURFACE_L": "S",
-        "WIDTH_LEFT": 0,
-        "FACILITY_R": "KBL",
-        "SURFACE_R": "S",
-        "WIDTH_RIGH": 0,
-        "LIGHTING": "",
-        "VERI_DATE": "2011-08-02T00:00:00.000Z"
-      }
-     */
+    assertEquals(5068, sf.getAttribute("RD_NUM"));
+    assertEquals(
+      (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")).parse("2011-08-02T00:00:00.000Z"),
+      sf.getAttribute("VERI_DATE"));
   }
 }
